@@ -73,7 +73,7 @@ No GitHub, conceda ao repositório do Identity acesso de leitura ao package Buil
 ## Execução local
 
 1. Copie `.env.example` para o mecanismo local de segredos de sua preferência.
-2. Inicie um PostgreSQL e crie o banco configurado em `ConnectionStrings__Identity`.
+2. Inicie um PostgreSQL e crie o banco configurado em `ConnectionStrings__Database`.
 3. Gere uma chave RSA de desenvolvimento:
 
 ```powershell
