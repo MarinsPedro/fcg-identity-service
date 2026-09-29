@@ -12,16 +12,14 @@ internal static class MigrationConnection
         "IDENTITY_DESIGN_CONNECTION"
     ];
 
-    public static IConfiguration BuildConfiguration(string[] args)
+    public static HostApplicationBuilder CreateBuilder(string[] args)
     {
-        var builder = Host.CreateApplicationBuilder(
+        return Host.CreateApplicationBuilder(
             new HostApplicationBuilderSettings
             {
                 Args = args,
                 ContentRootPath = AppContext.BaseDirectory
             });
-
-        return builder.Configuration;
     }
 
     public static string GetRequired(IConfiguration configuration)

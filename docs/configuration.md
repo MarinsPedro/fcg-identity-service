@@ -36,7 +36,9 @@ migrations. O migrador não lê arquivos da API, evitando acoplamento entre os
 dois executáveis.
 
 A API não executa migrations no startup. O migrador deve terminar com sucesso
-antes do processo da API ou do rollout do deployment.
+antes do processo da API ou do rollout do deployment. A execução usa timeout de
+120 segundos por comando e até cinco tentativas para falhas transitórias, com
+intervalo máximo de dez segundos.
 
 ## Emissão JWT
 

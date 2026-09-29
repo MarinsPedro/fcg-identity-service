@@ -8,13 +8,12 @@ public sealed class IdentityDbContextFactory : IDesignTimeDbContextFactory<Ident
 {
     public IdentityDbContext CreateDbContext(string[] args)
     {
-        var configuration = MigrationConnection.BuildConfiguration(args);
-        var options = new DbContextOptionsBuilder<IdentityDbContext>()
-            .UseNpgsql(
-                MigrationConnection.GetRequired(configuration),
-                postgres => postgres.MigrationsAssembly(
-                    typeof(IdentityDbContextFactory).Assembly.GetName().Name))
-            .Options;
-        return new IdentityDbContext(options);
+        var builder = MigrationConnection.CreateBuilder(args);
+        var options = new DbContextOptionsBuilder<IdentityDbContext>();
+        MigrationDbContextOptions.Configure(
+            options,
+            MigrationConnection.GetRequired(builder.Configuration));
+
+        return new IdentityDbContext(options.Options);
     }
 }

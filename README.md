@@ -47,8 +47,9 @@ src/
   FiapCloudGames.Identity.Migrations/      migrations e atualizador do banco
 tests/
   FiapCloudGames.Identity.ArchitectureTests/
-  FiapCloudGames.Identity.UnitTests/
   FiapCloudGames.Identity.IntegrationTests/
+  FiapCloudGames.Identity.MigrationsTests/
+  FiapCloudGames.Identity.UnitTests/
 docs/
   architecture.md
   configuration.md
@@ -120,6 +121,13 @@ dotnet ef migrations add NomeDaMigration `
   --startup-project src/FiapCloudGames.Identity.Migrations `
   --output-dir Migrations
 ```
+
+O projeto referencia diretamente `Microsoft.EntityFrameworkCore`,
+`Microsoft.EntityFrameworkCore.Design`, `Microsoft.Extensions.Hosting` e o
+provider Npgsql, pois usa essas APIs no próprio código. O comando `dotnet ef`
+vem do tool manifest em `.config/dotnet-tools.json`; por isso o pacote
+`Microsoft.EntityFrameworkCore.Tools`, destinado principalmente ao Package
+Manager Console do Visual Studio, não é necessário.
 
 O processo da API nunca executa migrations automaticamente. Em contêineres,
 use a imagem com target `migrations` antes de iniciar ou atualizar a API:

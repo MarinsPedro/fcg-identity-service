@@ -1,6 +1,6 @@
 using FiapCloudGames.Identity.Infrastructure.Persistence;
 using FiapCloudGames.Identity.Migrations;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 using var cancellation = new CancellationTokenSource();
 Console.CancelKeyPress += (_, eventArgs) =>
@@ -11,29 +11,16 @@ Console.CancelKeyPress += (_, eventArgs) =>
 
 try
 {
-    var configuration = MigrationConnection.BuildConfiguration(args);
-    var options = new DbContextOptionsBuilder<IdentityDbContext>()
-        .UseNpgsql(
-            MigrationConnection.GetRequired(configuration),
-            postgres => postgres.MigrationsAssembly(typeof(Program).Assembly.GetName().Name))
-        .Options;
+    var builder = MigrationConnection.CreateBuilder(args);
+    var connectionString = MigrationConnection.GetRequired(builder.Configuration);
+    builder.Services.AddDbContext<IdentityDbContext>(options =>
+        MigrationDbContextOptions.Configure(options, connectionString));
+    builder.Services.AddScoped<MigrationRunner>();
 
-    await using var context = new IdentityDbContext(options);
-    var pending = (await context.Database.GetPendingMigrationsAsync(cancellation.Token))
-        .ToArray();
-
-    if (pending.Length == 0)
-    {
-        Console.WriteLine("O banco do Identity já está atualizado.");
-        return 0;
-    }
-
-    Console.WriteLine(
-        "Aplicando {0} migration(s) do Identity: {1}.",
-        pending.Length,
-        string.Join(", ", pending));
-    await context.Database.MigrateAsync(cancellation.Token);
-    Console.WriteLine("Migrations do Identity aplicadas com sucesso.");
+    using var host = builder.Build();
+    await using var scope = host.Services.CreateAsyncScope();
+    var runner = scope.ServiceProvider.GetRequiredService<MigrationRunner>();
+    await runner.RunAsync(cancellation.Token);
     return 0;
 }
 catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
@@ -44,6 +31,6 @@ catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
 catch (Exception exception)
 {
     Console.Error.WriteLine("Falha ao aplicar as migrations do Identity.");
-    Console.Error.WriteLine(exception);
+    Console.Error.WriteLine(exception.Message);
     return 1;
 }

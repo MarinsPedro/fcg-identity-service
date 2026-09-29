@@ -77,6 +77,15 @@ imagem `migrations` como Job antes do rollout. Uma falha encerra com código `1`
 cancelamento encerra com código `2`, impedindo que o deploy prossiga como se o
 banco estivesse atualizado.
 
+O migrador registra o `IdentityDbContext` e o executor no container de DI, usa
+`ILogger` para logs estruturados e aplica retry limitado para falhas transitórias
+do PostgreSQL. `FiapCloudGames.Identity.MigrationsTests` garante que:
+
+- as migrations são descobertas pelo EF Core;
+- o modelo não divergiu do snapshot;
+- o assembly de migrations é o projeto correto;
+- schema, tabelas e colunas seguem as convenções do Identity.
+
 ## Onde implementar uma mudança
 
 | Mudança | Local |
