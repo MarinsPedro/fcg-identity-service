@@ -1,6 +1,9 @@
 using FiapCloudGames.BuildingBlocks.Authentication;
 using FiapCloudGames.Identity.Application;
 using FiapCloudGames.Identity.Application.Abstractions;
+using FiapCloudGames.Identity.Application.Abstractions.Persistence;
+using FiapCloudGames.Identity.Application.Abstractions.Security;
+using FiapCloudGames.Identity.Domain.Repositories;
 using FiapCloudGames.Identity.Infrastructure.Authentication;
 using FiapCloudGames.Identity.Infrastructure.Bootstrap;
 using FiapCloudGames.Identity.Infrastructure.Persistence;
@@ -45,13 +48,16 @@ public static class DependencyInjection
 
         services.AddDbContext<IdentityDbContext>(options =>
             options.UseNpgsql(connectionString));
-        services.AddScoped<IIdentityStore>(provider =>
+        services.AddScoped<IIdentityUnitOfWork>(provider =>
             provider.GetRequiredService<IdentityDbContext>());
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IServiceClientRepository, ServiceClientRepository>();
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<IRefreshTokenProtector, RefreshTokenProtector>();
         services.AddSingleton<RsaSigningKeyProvider>();
-        services.AddSingleton<IJwksProvider>(provider =>
+        services.AddSingleton<ITokenDiscoveryProvider>(provider =>
             provider.GetRequiredService<RsaSigningKeyProvider>());
         services.AddSingleton<ITokenIssuer, JwtTokenIssuer>();
         services.AddHostedService<ClientBootstrapHostedService>();

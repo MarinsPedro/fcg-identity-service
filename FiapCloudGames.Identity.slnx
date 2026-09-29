@@ -4,8 +4,10 @@
     <Project Path="src/FiapCloudGames.Identity.Application/FiapCloudGames.Identity.Application.csproj" />
     <Project Path="src/FiapCloudGames.Identity.Domain/FiapCloudGames.Identity.Domain.csproj" />
     <Project Path="src/FiapCloudGames.Identity.Infrastructure/FiapCloudGames.Identity.Infrastructure.csproj" />
+    <Project Path="src/FiapCloudGames.Identity.Presentation/FiapCloudGames.Identity.Presentation.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/FiapCloudGames.Identity.ArchitectureTests/FiapCloudGames.Identity.ArchitectureTests.csproj" />
     <Project Path="tests/FiapCloudGames.Identity.UnitTests/FiapCloudGames.Identity.UnitTests.csproj" />
     <Project Path="tests/FiapCloudGames.Identity.IntegrationTests/FiapCloudGames.Identity.IntegrationTests.csproj" />
   </Folder>

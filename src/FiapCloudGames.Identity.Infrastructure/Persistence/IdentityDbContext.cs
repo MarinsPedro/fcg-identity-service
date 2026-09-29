@@ -1,4 +1,4 @@
-using FiapCloudGames.Identity.Application.Abstractions;
+using FiapCloudGames.Identity.Application.Abstractions.Persistence;
 using FiapCloudGames.Identity.Domain.Entities;
 using FiapCloudGames.Identity.Domain.Enums;
 using FiapCloudGames.Identity.Domain.ValueObjects;
@@ -8,48 +8,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FiapCloudGames.Identity.Infrastructure.Persistence;
 
 public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> options)
-    : DbContext(options), IIdentityStore
+    : DbContext(options), IIdentityUnitOfWork
 {
     public DbSet<User> Users => Set<User>();
     public DbSet<ServiceClient> ServiceClients => Set<ServiceClient>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
-
-    public Task AddUserAsync(User user, CancellationToken cancellationToken) =>
-        Users.AddAsync(user, cancellationToken).AsTask();
-
-    public Task<User?> FindUserByEmailAsync(Email email, CancellationToken cancellationToken) =>
-        Users.SingleOrDefaultAsync(user => user.Email == email, cancellationToken);
-
-    public Task<User?> FindUserByIdAsync(Guid id, CancellationToken cancellationToken) =>
-        Users.SingleOrDefaultAsync(user => user.Id == id, cancellationToken);
-
-    public Task<bool> UserEmailExistsAsync(
-        Email email,
-        Guid? exceptUserId,
-        CancellationToken cancellationToken) =>
-        Users.AnyAsync(
-            user => user.Email == email &&
-                (!exceptUserId.HasValue || user.Id != exceptUserId.Value),
-            cancellationToken);
-
-    public Task<ServiceClient?> FindClientAsync(
-        string clientId,
-        CancellationToken cancellationToken) =>
-        ServiceClients.SingleOrDefaultAsync(client => client.ClientId == clientId, cancellationToken);
-
-    public Task AddClientAsync(ServiceClient client, CancellationToken cancellationToken) =>
-        ServiceClients.AddAsync(client, cancellationToken).AsTask();
-
-    public Task<RefreshToken?> FindRefreshTokenAsync(
-        string tokenHash,
-        CancellationToken cancellationToken) =>
-        RefreshTokens
-            .SingleOrDefaultAsync(token => token.TokenHash == tokenHash, cancellationToken);
-
-    public Task AddRefreshTokenAsync(
-        RefreshToken refreshToken,
-        CancellationToken cancellationToken) =>
-        RefreshTokens.AddAsync(refreshToken, cancellationToken).AsTask();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

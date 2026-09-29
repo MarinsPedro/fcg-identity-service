@@ -1,24 +1,21 @@
 using System.Security.Cryptography;
+using FiapCloudGames.Identity.Application.Abstractions.Security;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 namespace FiapCloudGames.Identity.Infrastructure.Authentication;
 
-public interface IJwksProvider
-{
-    object GetDocument();
-}
-
-internal sealed class RsaSigningKeyProvider : IJwksProvider, IDisposable
+internal sealed class RsaSigningKeyProvider : ITokenDiscoveryProvider, IDisposable
 {
     private readonly RSA rsa;
+    private readonly JwtOptions options;
 
     public RsaSigningKeyProvider(
         IOptions<JwtOptions> optionsAccessor,
         IHostEnvironment environment)
     {
-        var options = optionsAccessor.Value;
+        options = optionsAccessor.Value;
         rsa = RSA.Create();
 
         var pem = options.PrivateKeyPem;
@@ -46,27 +43,24 @@ internal sealed class RsaSigningKeyProvider : IJwksProvider, IDisposable
 
     public RsaSecurityKey SecurityKey { get; }
 
+    public string Issuer => options.Issuer;
+
     public SigningCredentials SigningCredentials =>
         new(SecurityKey, SecurityAlgorithms.RsaSha256);
 
-    public object GetDocument()
+    public JwksDocument GetJwks()
     {
         var parameters = rsa.ExportParameters(false);
-        return new
-        {
-            keys = new[]
-            {
-                new
-                {
-                    kty = "RSA",
-                    use = "sig",
-                    alg = SecurityAlgorithms.RsaSha256,
-                    kid = SecurityKey.KeyId,
-                    n = Base64UrlEncoder.Encode(parameters.Modulus),
-                    e = Base64UrlEncoder.Encode(parameters.Exponent)
-                }
-            }
-        };
+        return new JwksDocument(
+        [
+            new Jwk(
+                "RSA",
+                "sig",
+                SecurityAlgorithms.RsaSha256,
+                SecurityKey.KeyId,
+                Base64UrlEncoder.Encode(parameters.Modulus),
+                Base64UrlEncoder.Encode(parameters.Exponent))
+        ]);
     }
 
     public void Dispose() => rsa.Dispose();

@@ -1,5 +1,7 @@
 using FiapCloudGames.Identity.Application.Abstractions;
+using FiapCloudGames.Identity.Application.Abstractions.Persistence;
 using FiapCloudGames.Identity.Domain.Entities;
+using FiapCloudGames.Identity.Domain.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -23,7 +25,8 @@ internal sealed class ClientBootstrapHostedService(
         }
 
         await using var scope = scopeFactory.CreateAsyncScope();
-        var store = scope.ServiceProvider.GetRequiredService<IIdentityStore>();
+        var clientsRepository = scope.ServiceProvider.GetRequiredService<IServiceClientRepository>();
+        var unitOfWork = scope.ServiceProvider.GetRequiredService<IIdentityUnitOfWork>();
         var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
         var changed = false;
 
@@ -36,7 +39,7 @@ internal sealed class ClientBootstrapHostedService(
                     $"Configure um segredo real para o client '{options.ClientId}' por variável de ambiente ou user-secrets.");
             }
 
-            if (await store.FindClientAsync(options.ClientId, cancellationToken) is not null)
+            if (await clientsRepository.FindByIdAsync(options.ClientId, cancellationToken) is not null)
             {
                 continue;
             }
@@ -49,14 +52,14 @@ internal sealed class ClientBootstrapHostedService(
                 options.AllowedAudiences,
                 options.AllowedScopes,
                 clock.GetUtcNow());
-            await store.AddClientAsync(client, cancellationToken);
+            await clientsRepository.AddAsync(client, cancellationToken);
             changed = true;
             logger.LogInformation("Client {ClientId} criado pelo bootstrap.", client.ClientId);
         }
 
         if (changed)
         {
-            await store.SaveChangesAsync(cancellationToken);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
         }
     }
 

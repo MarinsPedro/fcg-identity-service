@@ -40,15 +40,20 @@ Não existe token `delegated`, cadeia `act` ou `origin_client_id` neste desenho.
 ```text
 src/
   FiapCloudGames.Identity.Domain/          entidades e regras do domínio
-  FiapCloudGames.Identity.Application/     casos de uso e portas
+  FiapCloudGames.Identity.Application/     casos de uso, Inputs, Results e portas
   FiapCloudGames.Identity.Infrastructure/  PostgreSQL, hashing e emissão JWT
-  FiapCloudGames.Identity.Api/             controllers, contratos e composição da aplicação
+  FiapCloudGames.Identity.Presentation/    Controllers, Requests, Responses e mappings HTTP
+  FiapCloudGames.Identity.Api/             composition root e pipeline
 tests/
+  FiapCloudGames.Identity.ArchitectureTests/
   FiapCloudGames.Identity.UnitTests/
   FiapCloudGames.Identity.IntegrationTests/
 docs/
+  architecture.md
   configuration.md
 ```
+
+As regras e exemplos da estrutura estão em [docs/architecture.md](docs/architecture.md).
 
 ## Pré-requisitos
 
