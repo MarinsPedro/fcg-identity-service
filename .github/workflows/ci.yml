@@ -21,7 +21,7 @@ jobs:
         with:
           dotnet-version: 10.0.401
           source-url: https://nuget.pkg.github.com/MarinsPedro/index.json
-      - run: dotnet restore FiapCloudGames.Identity.slnx --configfile NuGet.Config
+      - run: dotnet restore FiapCloudGames.Identity.slnx
       - run: dotnet format FiapCloudGames.Identity.slnx --verify-no-changes --no-restore
       - run: dotnet build FiapCloudGames.Identity.slnx -c Release --no-restore
       - run: dotnet test FiapCloudGames.Identity.slnx -c Release --no-build --no-restore
