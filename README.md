@@ -122,12 +122,29 @@ dotnet ef migrations add NomeDaMigration `
   --output-dir Migrations
 ```
 
-O projeto referencia diretamente `Microsoft.EntityFrameworkCore`,
-`Microsoft.EntityFrameworkCore.Design`, `Microsoft.Extensions.Hosting` e o
-provider Npgsql, pois usa essas APIs no próprio código. O comando `dotnet ef`
-vem do tool manifest em `.config/dotnet-tools.json`; por isso o pacote
-`Microsoft.EntityFrameworkCore.Tools`, destinado principalmente ao Package
-Manager Console do Visual Studio, não é necessário.
+O projeto suporta as duas ferramentas do EF Core:
+
+- `dotnet ef`, restaurado pelo tool manifest em `.config/dotnet-tools.json`;
+- Package Manager Console do Visual Studio, por meio de
+  `Microsoft.EntityFrameworkCore.Tools`.
+
+No Package Manager Console, use explicitamente o projeto de migrations como
+projeto de destino e de startup:
+
+```powershell
+Add-Migration NomeDaMigration `
+  -Project FiapCloudGames.Identity.Migrations `
+  -StartupProject FiapCloudGames.Identity.Migrations `
+  -OutputDir Migrations
+
+Update-Database `
+  -Project FiapCloudGames.Identity.Migrations `
+  -StartupProject FiapCloudGames.Identity.Migrations
+```
+
+`Microsoft.EntityFrameworkCore.Design` e `Microsoft.EntityFrameworkCore.Tools`
+usam `PrivateAssets=all`, portanto permanecem dependências internas de
+desenvolvimento e não são propagadas para consumidores.
 
 O processo da API nunca executa migrations automaticamente. Em contêineres,
 use a imagem com target `migrations` antes de iniciar ou atualizar a API:
