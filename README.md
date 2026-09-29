@@ -39,11 +39,12 @@ Não existe token `delegated`, cadeia `act` ou `origin_client_id` neste desenho.
 
 ```text
 src/
-  FiapCloudGames.Identity.Domain/          entidades e regras do domínio
+  FiapCloudGames.Identity.Api/             composition root e pipeline
   FiapCloudGames.Identity.Application/     casos de uso, Inputs, Results e portas
+  FiapCloudGames.Identity.Domain/          entidades e regras do domínio
   FiapCloudGames.Identity.Infrastructure/  PostgreSQL, hashing e emissão JWT
   FiapCloudGames.Identity.Presentation/    Controllers, Requests, Responses e mappings HTTP
-  FiapCloudGames.Identity.Api/             composition root e pipeline
+  FiapCloudGames.Identity.Migrations/      migrations e atualizador do banco
 tests/
   FiapCloudGames.Identity.ArchitectureTests/
   FiapCloudGames.Identity.UnitTests/
@@ -102,8 +103,29 @@ No GitHub, conceda ao repositório do Identity acesso de leitura ao package Buil
 ```powershell
 dotnet tool restore
 dotnet restore FiapCloudGames.Identity.slnx
-dotnet ef database update --project src/FiapCloudGames.Identity.Infrastructure --startup-project src/FiapCloudGames.Identity.Api
+$env:IDENTITY_MIGRATIONS_CONNECTION = $env:ConnectionStrings__Database
+dotnet run --project src/FiapCloudGames.Identity.Migrations
 dotnet run --project src/FiapCloudGames.Identity.Api
+```
+
+Para criar uma nova migration:
+
+```powershell
+$env:IDENTITY_DESIGN_CONNECTION = $env:ConnectionStrings__Database
+dotnet ef migrations add NomeDaMigration `
+  --project src/FiapCloudGames.Identity.Migrations `
+  --startup-project src/FiapCloudGames.Identity.Migrations `
+  --output-dir Migrations
+```
+
+O processo da API nunca executa migrations automaticamente. Em contêineres,
+use a imagem com target `migrations` antes de iniciar ou atualizar a API:
+
+```powershell
+docker build `
+  --target migrations `
+  --secret "id=nuget_config,src=$env:APPDATA\NuGet\NuGet.Config" `
+  -t fcg-identity-migrations:local .
 ```
 
 Em `Development`, a interface Swagger fica disponível em

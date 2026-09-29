@@ -16,6 +16,7 @@ public sealed class ArchitectureRulesTests
         AssertProjectReferences("Infrastructure", "Application", "Domain");
         AssertProjectReferences("Presentation", "Application");
         AssertProjectReferences("Api", "Infrastructure", "Presentation");
+        AssertProjectReferences("Migrations", "Infrastructure");
     }
 
     [Fact]
@@ -55,6 +56,46 @@ public sealed class ArchitectureRulesTests
 
         Assert.NotEmpty(presentationControllers);
         Assert.Empty(apiControllers);
+    }
+
+    [Fact]
+    public void EfMigrations_LiveOnlyInMigrationsExecutable()
+    {
+        var root = FindRepositoryRoot();
+        var infrastructureMigrations = Path.Combine(
+            root,
+            "src",
+            "FiapCloudGames.Identity.Infrastructure",
+            "Persistence",
+            "Migrations");
+        var migrationsDirectory = Path.Combine(
+            root,
+            "src",
+            "FiapCloudGames.Identity.Migrations",
+            "Migrations");
+        var migrationsProjectFile = Path.Combine(
+            root,
+            "src",
+            "FiapCloudGames.Identity.Migrations",
+            "FiapCloudGames.Identity.Migrations.csproj");
+
+        Assert.False(
+            Directory.Exists(infrastructureMigrations) &&
+            Directory.GetFiles(
+                infrastructureMigrations,
+                "*.cs",
+                SearchOption.AllDirectories).Length > 0);
+        Assert.True(Directory.Exists(migrationsDirectory));
+        Assert.NotEmpty(Directory.GetFiles(
+            migrationsDirectory,
+            "*.cs",
+            SearchOption.TopDirectoryOnly));
+        Assert.Equal(
+            "Exe",
+            XDocument.Load(migrationsProjectFile)
+                .Descendants("OutputType")
+                .Single()
+                .Value);
     }
 
     private static void AssertDoesNotReference(Assembly assembly, params string[] forbiddenParts)

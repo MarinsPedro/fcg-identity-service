@@ -8,16 +8,13 @@ para evoluir este repositório.
 ## Direção das dependências
 
 ```text
-Domain
-  ↑
-Application
-  ↑             ↑
-Presentation  Infrastructure
-       ↑         ↑
-          API
+API ───────────→ Presentation ──→ Application ──→ Domain
+API ───────────→ Infrastructure ──→ Application ──→ Domain
+Migrations ───────→ Infrastructure
 ```
 
-Uma camada externa conhece uma camada interna; o inverso não ocorre.
+As setas apontam para o projeto conhecido pela origem. Uma camada externa
+conhece uma camada interna; o inverso não ocorre.
 
 | Projeto | Responsabilidade | Dependências de projeto permitidas |
 |---|---|---|
@@ -26,6 +23,7 @@ Uma camada externa conhece uma camada interna; o inverso não ocorre.
 | Infrastructure | EF Core, repositories, hashing, JWT e bootstrap técnico | Application e Domain |
 | Presentation | Controllers, Requests, Responses e mappings HTTP | Application |
 | API | composition root, middleware e pipeline | Infrastructure e Presentation |
+| Migrations | migrations EF Core e atualização explícita do banco | Infrastructure |
 
 `FiapCloudGames.Identity.ArchitectureTests` fiscaliza essa matriz para impedir
 dependências acidentais.
@@ -69,8 +67,15 @@ HTTP e nunca devolvem entidades de domínio diretamente.
   `AsNoTracking`;
 - entidades e `IQueryable` não atravessam a fronteira da Infrastructure.
 
-Como este é um microserviço com banco próprio, suas migrations ficam no próprio
-projeto Infrastructure. O migrador central do monólito não deve ser copiado.
+Como este é um microserviço com banco próprio, as migrations e o snapshot ficam
+em `FiapCloudGames.Identity.Migrations`. Esse projeto é um executável que aplica
+somente o banco do Identity. Ele depende de Infrastructure; API e Infrastructure
+não dependem dele. A API nunca altera schema durante o startup.
+
+Em desenvolvimento, execute o migrador antes da API. Em Kubernetes, execute a
+imagem `migrations` como Job antes do rollout. Uma falha encerra com código `1`;
+cancelamento encerra com código `2`, impedindo que o deploy prossiga como se o
+banco estivesse atualizado.
 
 ## Onde implementar uma mudança
 
@@ -81,6 +86,7 @@ projeto Infrastructure. O migrador central do monólito não deve ser copiado.
 | coordenação de uma operação | Application/Features |
 | abstração de recurso técnico | Application/Abstractions |
 | EF Core, repository, JWT ou hashing | Infrastructure |
+| migration, snapshot ou execução de atualização do schema | Migrations |
 | rota, Request, Response ou mapping HTTP | Presentation/Features |
 | registro final e pipeline | API/Program.cs |
 | regra estrutural | ArchitectureTests |

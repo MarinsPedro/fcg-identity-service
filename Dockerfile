@@ -10,6 +10,12 @@ COPY . .
 RUN --mount=type=secret,id=nuget_config,target=/root/.nuget/NuGet/NuGet.Config,required=true \
     dotnet restore FiapCloudGames.Identity.slnx --configfile /root/.nuget/NuGet/NuGet.Config
 RUN dotnet publish src/FiapCloudGames.Identity.Api/FiapCloudGames.Identity.Api.csproj -c Release --no-restore -o /app/publish
+RUN dotnet publish src/FiapCloudGames.Identity.Migrations/FiapCloudGames.Identity.Migrations.csproj -c Release --no-restore -o /app/migrations
+
+FROM runtime AS migrations
+WORKDIR /app
+COPY --from=build /app/migrations .
+ENTRYPOINT ["dotnet", "FiapCloudGames.Identity.Migrations.dll"]
 
 FROM runtime AS final
 WORKDIR /app

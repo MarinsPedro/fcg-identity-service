@@ -9,7 +9,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace FiapCloudGames.Identity.Infrastructure.Persistence.Migrations
+namespace FiapCloudGames.Identity.Migrations.Migrations
 {
     [DbContext(typeof(IdentityDbContext))]
     [Migration("20260928234038_InitialIdentity")]

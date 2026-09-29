@@ -5,6 +5,7 @@
     <Project Path="src/FiapCloudGames.Identity.Domain/FiapCloudGames.Identity.Domain.csproj" />
     <Project Path="src/FiapCloudGames.Identity.Infrastructure/FiapCloudGames.Identity.Infrastructure.csproj" />
     <Project Path="src/FiapCloudGames.Identity.Presentation/FiapCloudGames.Identity.Presentation.csproj" />
+    <Project Path="src/FiapCloudGames.Identity.Migrations/FiapCloudGames.Identity.Migrations.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/FiapCloudGames.Identity.ArchitectureTests/FiapCloudGames.Identity.ArchitectureTests.csproj" />

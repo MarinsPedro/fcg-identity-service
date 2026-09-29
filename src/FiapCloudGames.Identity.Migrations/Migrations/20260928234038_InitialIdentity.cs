@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace FiapCloudGames.Identity.Infrastructure.Persistence.Migrations
+namespace FiapCloudGames.Identity.Migrations.Migrations
 {
     /// <inheritdoc />
     public partial class InitialIdentity : Migration

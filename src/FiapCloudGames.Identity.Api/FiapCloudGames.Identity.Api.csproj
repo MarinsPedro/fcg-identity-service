@@ -3,10 +3,6 @@
     <ProjectReference Include="../FiapCloudGames.Identity.Infrastructure/FiapCloudGames.Identity.Infrastructure.csproj" />
     <ProjectReference Include="../FiapCloudGames.Identity.Presentation/FiapCloudGames.Identity.Presentation.csproj" />
     <PackageReference Include="FiapCloudGames.BuildingBlocks" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
     <PackageReference Include="Swashbuckle.AspNetCore" />
   </ItemGroup>
 </Project>
