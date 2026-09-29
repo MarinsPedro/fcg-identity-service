@@ -7,6 +7,7 @@ using FiapCloudGames.Identity.Infrastructure;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddFiapServiceDefaults();
+builder.Services.AddControllers();
 builder.Services.AddFiapApiDefaults();
 builder.Services.AddIdentityInfrastructure(builder.Configuration);
 builder.Services.AddAuthorization(options =>
@@ -38,7 +39,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapFiapHealthChecks().AllowAnonymous();
-app.MapIdentityEndpoints();
+app.MapControllers();
 
 await app.RunAsync();
 

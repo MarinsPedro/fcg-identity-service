@@ -42,7 +42,7 @@ src/
   FiapCloudGames.Identity.Domain/          entidades e regras do domínio
   FiapCloudGames.Identity.Application/     casos de uso e portas
   FiapCloudGames.Identity.Infrastructure/  PostgreSQL, hashing e emissão JWT
-  FiapCloudGames.Identity.Api/             endpoints e composição da aplicação
+  FiapCloudGames.Identity.Api/             controllers, contratos e composição da aplicação
 tests/
   FiapCloudGames.Identity.UnitTests/
   FiapCloudGames.Identity.IntegrationTests/

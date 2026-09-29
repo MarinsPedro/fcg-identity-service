@@ -32,6 +32,24 @@ public sealed class DiscoveryTests(IdentityApiFactory factory)
     }
 
     [Fact]
+    public async Task Login_InvalidContract_ReturnsValidationProblem()
+    {
+        using var client = factory.CreateClient();
+        using var response = await client.PostAsJsonAsync(
+            "/api/auth/login",
+            new
+            {
+                email = "invalid",
+                password = string.Empty,
+                clientId = string.Empty,
+                clientSecret = string.Empty
+            });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+    }
+
+    [Fact]
     public async Task FullFlow_IssuesServiceAndUserTokens()
     {
         using var client = factory.CreateClient();
