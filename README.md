@@ -61,17 +61,28 @@ As regras e exemplos da estrutura estão em [docs/architecture.md](docs/architec
 - PostgreSQL;
 - acesso ao pacote privado `FiapCloudGames.BuildingBlocks` versão `0.2.0` no GitHub Packages.
 
-O `NuGet.Config` versionado contém somente os endereços dos feeds. Credenciais nunca devem ser gravadas no repositório. Para restaurar localmente, configure a fonte no perfil do desenvolvedor ou use um arquivo temporário fora do Git:
+O `NuGet.Config` versionado contém somente os endereços dos feeds e referências
+a variáveis de ambiente. Credenciais nunca são gravadas no repositório. Para
+restaurar localmente, defina:
 
 ```powershell
-dotnet nuget update source github `
-  --username SEU_USUARIO `
-  --password $env:GITHUB_PACKAGES_TOKEN `
-  --store-password-in-clear-text `
-  --configfile "$env:APPDATA\NuGet\NuGet.Config"
+$env:GITHUB_PACKAGES_USERNAME = "MarinsPedro"
+$env:GITHUB_PACKAGES_TOKEN = "SEU_PAT_CLASSIC"
+
+dotnet restore FiapCloudGames.Identity.slnx --configfile NuGet.Config
 ```
 
-O token precisa somente da permissão necessária para ler pacotes privados (`read:packages`) e acesso ao repositório/pacote.
+O token precisa de `read:packages` e acesso ao pacote privado. Para o Visual
+Studio herdar essas variáveis, configure-as no usuário e reinicie o Visual
+Studio. O `appsettings.json` não é usado pelo NuGet, pois o restore ocorre antes
+da aplicação existir.
+
+Depois de um restore executado pelo terminal, remova o token da sessão quando
+ele não for mais necessário:
+
+```powershell
+Remove-Item Env:\GITHUB_PACKAGES_TOKEN
+```
 
 No GitHub, conceda ao repositório do Identity acesso de leitura ao package Building Blocks em **Package settings > Manage Actions access**. O workflow usa o `GITHUB_TOKEN` efêmero; nenhum PAT deve ser cadastrado no YAML.
 
@@ -94,6 +105,11 @@ dotnet restore FiapCloudGames.Identity.slnx
 dotnet ef database update --project src/FiapCloudGames.Identity.Infrastructure --startup-project src/FiapCloudGames.Identity.Api
 dotnet run --project src/FiapCloudGames.Identity.Api
 ```
+
+Em `Development`, a interface Swagger fica disponível em
+`http://localhost:5081/swagger`. Use `Authorize` para informar tokens Bearer.
+Login, refresh e client credentials continuam recebendo suas próprias
+credenciais nos contratos exibidos pela interface.
 
 Para criar a imagem sem gravar credenciais do GitHub Packages em camadas Docker, forneça um `NuGet.Config` autenticado como secret do BuildKit:
 
