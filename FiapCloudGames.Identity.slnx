@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/FiapCloudGames.Identity.Api/FiapCloudGames.Identity.Api.csproj" />
+    <Project Path="src/FiapCloudGames.Identity.Application/FiapCloudGames.Identity.Application.csproj" />
+    <Project Path="src/FiapCloudGames.Identity.Domain/FiapCloudGames.Identity.Domain.csproj" />
+    <Project Path="src/FiapCloudGames.Identity.Infrastructure/FiapCloudGames.Identity.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/FiapCloudGames.Identity.UnitTests/FiapCloudGames.Identity.UnitTests.csproj" />
+    <Project Path="tests/FiapCloudGames.Identity.IntegrationTests/FiapCloudGames.Identity.IntegrationTests.csproj" />
+  </Folder>
+</Solution>

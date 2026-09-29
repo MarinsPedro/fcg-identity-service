@@ -1,0 +1,11 @@
+.git
+.github
+.vs
+**/bin
+**/obj
+artifacts
+secrets
+.env
+*.pem
+*.pfx
+NuGet.Config.local
