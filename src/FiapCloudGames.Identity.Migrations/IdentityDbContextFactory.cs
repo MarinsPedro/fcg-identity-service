@@ -8,9 +8,10 @@ public sealed class IdentityDbContextFactory : IDesignTimeDbContextFactory<Ident
 {
     public IdentityDbContext CreateDbContext(string[] args)
     {
+        var configuration = MigrationConnection.BuildConfiguration(args);
         var options = new DbContextOptionsBuilder<IdentityDbContext>()
             .UseNpgsql(
-                MigrationConnection.GetRequired(),
+                MigrationConnection.GetRequired(configuration),
                 postgres => postgres.MigrationsAssembly(
                     typeof(IdentityDbContextFactory).Assembly.GetName().Name))
             .Options;

@@ -11,9 +11,10 @@ Console.CancelKeyPress += (_, eventArgs) =>
 
 try
 {
+    var configuration = MigrationConnection.BuildConfiguration(args);
     var options = new DbContextOptionsBuilder<IdentityDbContext>()
         .UseNpgsql(
-            MigrationConnection.GetRequired(),
+            MigrationConnection.GetRequired(configuration),
             postgres => postgres.MigrationsAssembly(typeof(Program).Assembly.GetName().Name))
         .Options;
 

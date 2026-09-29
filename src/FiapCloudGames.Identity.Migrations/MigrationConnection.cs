@@ -1,17 +1,32 @@
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
+
 namespace FiapCloudGames.Identity.Migrations;
 
 internal static class MigrationConnection
 {
-    private static readonly string[] VariableNames =
+    private static readonly string[] OverrideVariableNames =
     [
         "IDENTITY_MIGRATIONS_CONNECTION",
         "ConnectionStrings__Database",
         "IDENTITY_DESIGN_CONNECTION"
     ];
 
-    public static string GetRequired()
+    public static IConfiguration BuildConfiguration(string[] args)
     {
-        foreach (var variableName in VariableNames)
+        var builder = Host.CreateApplicationBuilder(
+            new HostApplicationBuilderSettings
+            {
+                Args = args,
+                ContentRootPath = AppContext.BaseDirectory
+            });
+
+        return builder.Configuration;
+    }
+
+    public static string GetRequired(IConfiguration configuration)
+    {
+        foreach (var variableName in OverrideVariableNames)
         {
             var value = Environment.GetEnvironmentVariable(variableName);
             if (!string.IsNullOrWhiteSpace(value))
@@ -20,8 +35,14 @@ internal static class MigrationConnection
             }
         }
 
+        var configuredConnection = configuration.GetConnectionString("Database");
+        if (!string.IsNullOrWhiteSpace(configuredConnection))
+        {
+            return configuredConnection;
+        }
+
         throw new InvalidOperationException(
-            "Configure IDENTITY_MIGRATIONS_CONNECTION ou " +
-            "ConnectionStrings__Database para executar as migrations.");
+            "A connection string 'Database' não foi configurada. " +
+            "Configure-a no appsettings.json ou por variável de ambiente.");
     }
 }

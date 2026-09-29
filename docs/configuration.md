@@ -10,12 +10,18 @@ ConnectionStrings__Database=Host=localhost;Port=5432;Database=fcg_identity;Usern
 
 O Identity é o único proprietário do schema `identity`. Nenhum outro serviço deve acessar diretamente suas tabelas.
 
-O executável `FiapCloudGames.Identity.Migrations` procura a connection string
-na seguinte ordem:
+Assim como o migrador do monólito, o executável
+`FiapCloudGames.Identity.Migrations` usa o Generic Host. Ele carrega o
+`appsettings.json` copiado para o diretório de saída, o arquivo específico do
+ambiente, User Secrets em Development, variáveis de ambiente e argumentos de
+linha de comando.
+
+Os aliases explícitos de connection string são avaliados primeiro, nesta ordem:
 
 1. `IDENTITY_MIGRATIONS_CONNECTION`;
 2. `ConnectionStrings__Database`;
-3. `IDENTITY_DESIGN_CONNECTION`, usada pelos comandos `dotnet ef`.
+3. `IDENTITY_DESIGN_CONNECTION`, mantida para comandos `dotnet ef`;
+4. `ConnectionStrings:Database` da configuração montada pelo Generic Host.
 
 Exemplo:
 
@@ -23,6 +29,11 @@ Exemplo:
 $env:IDENTITY_MIGRATIONS_CONNECTION = "Host=localhost;Port=5432;Database=fcg_identity;Username=fcg_identity_app;Password=..."
 dotnet run --project src/FiapCloudGames.Identity.Migrations
 ```
+
+Se nenhuma dessas variáveis existir, basta configurar
+`ConnectionStrings:Database` no `appsettings.json` do próprio projeto de
+migrations. O migrador não lê arquivos da API, evitando acoplamento entre os
+dois executáveis.
 
 A API não executa migrations no startup. O migrador deve terminar com sucesso
 antes do processo da API ou do rollout do deployment.

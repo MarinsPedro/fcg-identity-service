@@ -103,15 +103,18 @@ No GitHub, conceda ao repositório do Identity acesso de leitura ao package Buil
 ```powershell
 dotnet tool restore
 dotnet restore FiapCloudGames.Identity.slnx
-$env:IDENTITY_MIGRATIONS_CONNECTION = $env:ConnectionStrings__Database
 dotnet run --project src/FiapCloudGames.Identity.Migrations
 dotnet run --project src/FiapCloudGames.Identity.Api
 ```
 
+Sem uma variável de ambiente, o migrador usa
+`src/FiapCloudGames.Identity.Migrations/appsettings.json`. Em ambientes reais,
+sobrescreva `ConnectionStrings:Database` por secret usando
+`ConnectionStrings__Database` ou `IDENTITY_MIGRATIONS_CONNECTION`.
+
 Para criar uma nova migration:
 
 ```powershell
-$env:IDENTITY_DESIGN_CONNECTION = $env:ConnectionStrings__Database
 dotnet ef migrations add NomeDaMigration `
   --project src/FiapCloudGames.Identity.Migrations `
   --startup-project src/FiapCloudGames.Identity.Migrations `

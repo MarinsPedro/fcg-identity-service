@@ -78,6 +78,11 @@ public sealed class ArchitectureRulesTests
             "src",
             "FiapCloudGames.Identity.Migrations",
             "FiapCloudGames.Identity.Migrations.csproj");
+        var migrationsAppSettings = Path.Combine(
+            root,
+            "src",
+            "FiapCloudGames.Identity.Migrations",
+            "appsettings.json");
 
         Assert.False(
             Directory.Exists(infrastructureMigrations) &&
@@ -90,12 +95,22 @@ public sealed class ArchitectureRulesTests
             migrationsDirectory,
             "*.cs",
             SearchOption.TopDirectoryOnly));
+        Assert.True(File.Exists(migrationsAppSettings));
+
+        var migrationsProject = XDocument.Load(migrationsProjectFile);
         Assert.Equal(
             "Exe",
-            XDocument.Load(migrationsProjectFile)
-                .Descendants("OutputType")
+            migrationsProject.Descendants("OutputType")
                 .Single()
                 .Value);
+        Assert.Equal(
+            "PreserveNewest",
+            migrationsProject
+                .Descendants("None")
+                .Single(element =>
+                    element.Attribute("Update")?.Value == "appsettings*.json")
+                .Element("CopyToOutputDirectory")
+                ?.Value);
     }
 
     private static void AssertDoesNotReference(Assembly assembly, params string[] forbiddenParts)
