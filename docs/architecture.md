@@ -67,6 +67,12 @@ HTTP e nunca devolvem entidades de domínio diretamente.
   `AsNoTracking`;
 - entidades e `IQueryable` não atravessam a fronteira da Infrastructure.
 
+As permissões dos clients são normalizadas. `service_client_scopes` e
+`service_client_audiences` possuem uma linha por associação e chave composta
+com `client_id`. `ServiceClient` continua sendo a raiz do agregado e controla
+concessão, remoção e verificação dessas coleções. O repository sempre carrega as
+duas coleções ao autenticar um client.
+
 Como este é um microserviço com banco próprio, as migrations e o snapshot ficam
 em `FiapCloudGames.Identity.Migrations`. Esse projeto é um executável que aplica
 somente o banco do Identity. Ele depende de Infrastructure; API e Infrastructure

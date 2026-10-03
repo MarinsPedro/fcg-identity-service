@@ -117,6 +117,11 @@ Regras:
 - o valor literal `CHANGE_ME` é rejeitado;
 - os segredos são persistidos somente como hash PBKDF2.
 
+Cada audience e scope é persistido como uma associação individual em
+`service_client_audiences` e `service_client_scopes`. As listas da configuração
+são usadas somente como entrada do bootstrap; não são armazenadas em uma coluna
+concatenada.
+
 Após o bootstrap, remova os segredos da configuração do processo. A administração e rotação de clientes por uma API administrativa auditada pode ser adicionada em uma fase posterior.
 
 Em `Development`, a API possui o seguinte client exclusivamente para testes:

@@ -2,6 +2,9 @@ namespace FiapCloudGames.Identity.Domain.Entities;
 
 public sealed class ServiceClient
 {
+    private readonly List<ServiceClientAudience> allowedAudiences = [];
+    private readonly List<ServiceClientScope> allowedScopes = [];
+
     private ServiceClient() { }
 
     private ServiceClient(
@@ -17,8 +20,8 @@ public sealed class ServiceClient
         DisplayName = NormalizeRequired(displayName, 200, "nome do client");
         SecretHash = NormalizeRequired(secretHash, 500, "hash do segredo");
         CanIssueUserTokens = canIssueUserTokens;
-        AllowedAudiences = NormalizeList(allowedAudiences, "audiences");
-        AllowedScopes = NormalizeList(allowedScopes, "scopes");
+        AddAudiences(allowedAudiences);
+        AddScopes(allowedScopes);
         IsActive = true;
         CreatedAtUtc = createdAtUtc;
     }
@@ -27,8 +30,8 @@ public sealed class ServiceClient
     public string DisplayName { get; private set; } = string.Empty;
     public string SecretHash { get; private set; } = string.Empty;
     public bool CanIssueUserTokens { get; private set; }
-    public string AllowedAudiences { get; private set; } = string.Empty;
-    public string AllowedScopes { get; private set; } = string.Empty;
+    public IReadOnlyCollection<ServiceClientAudience> AllowedAudiences => allowedAudiences;
+    public IReadOnlyCollection<ServiceClientScope> AllowedScopes => allowedScopes;
     public bool IsActive { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; private set; }
 
@@ -50,15 +53,60 @@ public sealed class ServiceClient
             createdAtUtc);
 
     public bool AllowsAudience(string audience) =>
-        Split(AllowedAudiences).Contains(audience, StringComparer.Ordinal);
+        allowedAudiences.Any(allowed =>
+            string.Equals(allowed.Audience, audience?.Trim(), StringComparison.Ordinal));
 
     public bool AllowsScopes(IEnumerable<string> scopes)
     {
-        var allowed = Split(AllowedScopes).ToHashSet(StringComparer.Ordinal);
-        return scopes.All(allowed.Contains);
+        var allowed = allowedScopes
+            .Select(registered => registered.Scope)
+            .ToHashSet(StringComparer.Ordinal);
+        return scopes.All(scope => allowed.Contains(scope.Trim()));
     }
 
-    private static string NormalizeList(IEnumerable<string> values, string name)
+    public void AllowAudience(string audience)
+    {
+        var permission = ServiceClientAudience.Create(ClientId, audience);
+        if (allowedAudiences.All(current => current.Audience != permission.Audience))
+        {
+            allowedAudiences.Add(permission);
+        }
+    }
+
+    public bool RemoveAudience(string audience) =>
+        allowedAudiences.RemoveAll(current =>
+            string.Equals(current.Audience, audience?.Trim(), StringComparison.Ordinal)) > 0;
+
+    public void GrantScope(string scope)
+    {
+        var permission = ServiceClientScope.Create(ClientId, scope);
+        if (allowedScopes.All(current => current.Scope != permission.Scope))
+        {
+            allowedScopes.Add(permission);
+        }
+    }
+
+    public bool RevokeScope(string scope) =>
+        allowedScopes.RemoveAll(current =>
+            string.Equals(current.Scope, scope?.Trim(), StringComparison.Ordinal)) > 0;
+
+    private void AddAudiences(IEnumerable<string> audiences)
+    {
+        foreach (var audience in NormalizeList(audiences, "audiences"))
+        {
+            AllowAudience(audience);
+        }
+    }
+
+    private void AddScopes(IEnumerable<string> scopes)
+    {
+        foreach (var scope in NormalizeList(scopes, "scopes"))
+        {
+            GrantScope(scope);
+        }
+    }
+
+    private static string[] NormalizeList(IEnumerable<string> values, string name)
     {
         var normalized = values
             .Where(value => !string.IsNullOrWhiteSpace(value))
@@ -68,12 +116,10 @@ public sealed class ServiceClient
             .ToArray();
 
         return normalized.Length > 0
-            ? string.Join(' ', normalized)
-            : throw new DomainRuleViolationException($"Informe ao menos um valor para {name}.");
+            ? normalized
+            : throw new DomainRuleViolationException(
+                $"Informe ao menos um valor para {name}.");
     }
-
-    private static string[] Split(string value) =>
-        value.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
     private static string NormalizeRequired(string? value, int maximumLength, string field) =>
         value?.Trim() is { Length: > 0 } normalized && normalized.Length <= maximumLength

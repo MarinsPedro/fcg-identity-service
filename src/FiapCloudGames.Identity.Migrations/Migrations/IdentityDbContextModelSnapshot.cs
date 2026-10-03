@@ -48,6 +48,7 @@ namespace FiapCloudGames.Identity.Migrations.Migrations
                         .HasColumnName("replaced_by_token_id");
 
                     b.Property<DateTimeOffset?>("RevokedAtUtc")
+                        .IsConcurrencyToken()
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("revoked_at_utc");
 
@@ -80,18 +81,6 @@ namespace FiapCloudGames.Identity.Migrations.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("client_id");
 
-                    b.Property<string>("AllowedAudiences")
-                        .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)")
-                        .HasColumnName("allowed_audiences");
-
-                    b.Property<string>("AllowedScopes")
-                        .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)")
-                        .HasColumnName("allowed_scopes");
-
                     b.Property<bool>("CanIssueUserTokens")
                         .HasColumnType("boolean")
                         .HasColumnName("can_issue_user_tokens");
@@ -119,6 +108,44 @@ namespace FiapCloudGames.Identity.Migrations.Migrations
                     b.HasKey("ClientId");
 
                     b.ToTable("service_clients", "identity");
+                });
+
+            modelBuilder.Entity("FiapCloudGames.Identity.Domain.Entities.ServiceClientAudience", b =>
+                {
+                    b.Property<string>("ClientId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("client_id");
+
+                    b.Property<string>("Audience")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("audience");
+
+                    b.HasKey("ClientId", "Audience");
+
+                    b.HasIndex("Audience");
+
+                    b.ToTable("service_client_audiences", "identity");
+                });
+
+            modelBuilder.Entity("FiapCloudGames.Identity.Domain.Entities.ServiceClientScope", b =>
+                {
+                    b.Property<string>("ClientId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("client_id");
+
+                    b.Property<string>("Scope")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("scope");
+
+                    b.HasKey("ClientId", "Scope");
+
+                    b.HasIndex("Scope");
+
+                    b.ToTable("service_client_scopes", "identity");
                 });
 
             modelBuilder.Entity("FiapCloudGames.Identity.Domain.Entities.User", b =>
@@ -180,6 +207,31 @@ namespace FiapCloudGames.Identity.Migrations.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("FiapCloudGames.Identity.Domain.Entities.ServiceClientAudience", b =>
+                {
+                    b.HasOne("FiapCloudGames.Identity.Domain.Entities.ServiceClient", null)
+                        .WithMany("AllowedAudiences")
+                        .HasForeignKey("ClientId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("FiapCloudGames.Identity.Domain.Entities.ServiceClientScope", b =>
+                {
+                    b.HasOne("FiapCloudGames.Identity.Domain.Entities.ServiceClient", null)
+                        .WithMany("AllowedScopes")
+                        .HasForeignKey("ClientId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("FiapCloudGames.Identity.Domain.Entities.ServiceClient", b =>
+                {
+                    b.Navigation("AllowedAudiences");
+
+                    b.Navigation("AllowedScopes");
                 });
 #pragma warning restore 612, 618
         }

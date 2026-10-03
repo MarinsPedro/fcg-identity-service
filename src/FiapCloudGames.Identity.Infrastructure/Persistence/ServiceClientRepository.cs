@@ -10,7 +10,11 @@ internal sealed class ServiceClientRepository(IdentityDbContext context)
     public Task<ServiceClient?> FindByIdAsync(
         string clientId,
         CancellationToken cancellationToken) =>
-        context.ServiceClients.SingleOrDefaultAsync(
+        context.ServiceClients
+            .Include(client => client.AllowedAudiences)
+            .Include(client => client.AllowedScopes)
+            .AsSplitQuery()
+            .SingleOrDefaultAsync(
             client => client.ClientId == clientId,
             cancellationToken);
 

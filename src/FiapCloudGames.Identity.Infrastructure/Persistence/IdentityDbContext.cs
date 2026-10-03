@@ -12,6 +12,8 @@ public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> option
 {
     public DbSet<User> Users => Set<User>();
     public DbSet<ServiceClient> ServiceClients => Set<ServiceClient>();
+    public DbSet<ServiceClientAudience> ServiceClientAudiences => Set<ServiceClientAudience>();
+    public DbSet<ServiceClientScope> ServiceClientScopes => Set<ServiceClientScope>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -47,10 +49,40 @@ public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> option
             builder.Property(client => client.DisplayName).HasColumnName("display_name").HasMaxLength(200).IsRequired();
             builder.Property(client => client.SecretHash).HasColumnName("secret_hash").HasMaxLength(500).IsRequired();
             builder.Property(client => client.CanIssueUserTokens).HasColumnName("can_issue_user_tokens").IsRequired();
-            builder.Property(client => client.AllowedAudiences).HasColumnName("allowed_audiences").HasMaxLength(1000).IsRequired();
-            builder.Property(client => client.AllowedScopes).HasColumnName("allowed_scopes").HasMaxLength(2000).IsRequired();
             builder.Property(client => client.IsActive).HasColumnName("is_active").IsRequired();
             builder.Property(client => client.CreatedAtUtc).HasColumnName("created_at_utc").IsRequired();
+            builder.Navigation(client => client.AllowedAudiences)
+                .HasField("allowedAudiences")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+            builder.Navigation(client => client.AllowedScopes)
+                .HasField("allowedScopes")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        modelBuilder.Entity<ServiceClientAudience>(builder =>
+        {
+            builder.ToTable("service_client_audiences");
+            builder.HasKey(audience => new { audience.ClientId, audience.Audience });
+            builder.Property(audience => audience.ClientId).HasColumnName("client_id").HasMaxLength(100);
+            builder.Property(audience => audience.Audience).HasColumnName("audience").HasMaxLength(200);
+            builder.HasIndex(audience => audience.Audience);
+            builder.HasOne<ServiceClient>()
+                .WithMany(client => client.AllowedAudiences)
+                .HasForeignKey(audience => audience.ClientId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ServiceClientScope>(builder =>
+        {
+            builder.ToTable("service_client_scopes");
+            builder.HasKey(scope => new { scope.ClientId, scope.Scope });
+            builder.Property(scope => scope.ClientId).HasColumnName("client_id").HasMaxLength(100);
+            builder.Property(scope => scope.Scope).HasColumnName("scope").HasMaxLength(200);
+            builder.HasIndex(scope => scope.Scope);
+            builder.HasOne<ServiceClient>()
+                .WithMany(client => client.AllowedScopes)
+                .HasForeignKey(scope => scope.ClientId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<RefreshToken>(builder =>
