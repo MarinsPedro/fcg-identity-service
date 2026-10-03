@@ -3,7 +3,6 @@ using FiapCloudGames.BuildingBlocks.Web;
 using FiapCloudGames.Identity.Api.Configuration;
 using FiapCloudGames.Identity.Infrastructure;
 using FiapCloudGames.Identity.Presentation;
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,21 +19,7 @@ app.UseIdentityOpenApi();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapFiapHealthChecks().AllowAnonymous();
-app.MapHealthChecks(
-    "/health/live",
-    new HealthCheckOptions
-    {
-        Predicate = _ => false,
-        AllowCachingResponses = false
-    }).AllowAnonymous();
-app.MapHealthChecks(
-    "/health/ready",
-    new HealthCheckOptions
-    {
-        Predicate = registration => registration.Tags.Contains("ready"),
-        AllowCachingResponses = false
-    }).AllowAnonymous();
+app.MapFiapHealthEndpoints();
 app.MapControllers();
 
 await app.RunAsync();
