@@ -40,6 +40,37 @@ antes do processo da API ou do rollout do deployment. A execução usa timeout d
 120 segundos por comando e até cinco tentativas para falhas transitórias, com
 intervalo máximo de dez segundos.
 
+## Seed do administrador
+
+Depois de atualizar o banco, o projeto de migrations executa uma seed opcional
+e idempotente. Ela usa:
+
+```text
+Admin__Name=Administrador
+Admin__Email=admin@example.com
+Admin__Password=uma-senha-forte
+```
+
+`Admin:Email` e `Admin:Password` devem ser fornecidos juntos. A senha segue a
+mesma regra do cadastro: ao menos oito caracteres, com letra, número e caractere
+especial. Se o administrador já existir, a senha não é alterada. Se o mesmo
+e-mail pertencer a um usuário sem papel `Administrator`, o migrador falha para
+não ocultar uma configuração incorreta.
+
+O seed também é executado quando o schema já está atualizado. Isso permite
+preparar um banco existente sem criar uma migration vazia.
+
+O arquivo `appsettings.Development.json` do projeto de migrations contém apenas
+credenciais locais conhecidas:
+
+```text
+admin@fiapcloudgames.com / Admin@123456
+```
+
+O perfil de execução do projeto define `DOTNET_ENVIRONMENT=Development`. Fora
+desse ambiente, injete as configurações por secret. Nunca reutilize a senha
+local em ambiente compartilhado ou produção.
+
 ## Emissão JWT
 
 ```text
@@ -87,6 +118,18 @@ Regras:
 - os segredos são persistidos somente como hash PBKDF2.
 
 Após o bootstrap, remova os segredos da configuração do processo. A administração e rotação de clientes por uma API administrativa auditada pode ser adicionada em uma fase posterior.
+
+Em `Development`, a API possui o seguinte client exclusivamente para testes:
+
+```text
+client_id=web-bff
+client_secret=WebBff@123456
+audiences=web-bff identity-api
+scopes=store.access identity.users.create identity.users.read identity.users.write
+```
+
+O bootstrap não sobrescreve um client existente. Portanto, alterar o segredo no
+arquivo não rotaciona uma credencial que já foi persistida.
 
 ## Validação nas APIs consumidoras
 

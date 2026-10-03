@@ -111,6 +111,18 @@ dotnet run --project src/FiapCloudGames.Identity.Migrations
 dotnet run --project src/FiapCloudGames.Identity.Api
 ```
 
+Com os perfis `Development`, o migrador cria de forma idempotente um
+administrador local e a API cria um client técnico para testes:
+
+| Tipo | Identificador | Segredo local |
+|---|---|---|
+| administrador | `admin@fiapcloudgames.com` | `Admin@123456` |
+| service client | `web-bff` | `WebBff@123456` |
+
+Essas credenciais são públicas e exclusivas do ambiente local. Nunca as use em
+um ambiente compartilhado ou de produção. As regras e o fluxo de teste estão em
+[docs/endpoints.md](docs/endpoints.md).
+
 Sem uma variável de ambiente, o migrador usa
 `src/FiapCloudGames.Identity.Migrations/appsettings.json`. Em ambientes reais,
 sobrescreva `ConnectionStrings:Database` por secret usando
@@ -200,6 +212,7 @@ dotnet format FiapCloudGames.Identity.slnx --verify-no-changes --no-restore
 ## Segurança operacional
 
 - use um segredo diferente para cada BFF, Gateway, API e worker;
+- substitua as credenciais locais conhecidas fora de `Development`;
 - armazene segredos e a chave privada em secret manager/Kubernetes Secret, nunca em Git;
 - entregue às APIs apenas a chave pública/JWKS;
 - faça rotação dos segredos e da chave de assinatura;

@@ -1,4 +1,5 @@
 using FiapCloudGames.Identity.Infrastructure.Persistence;
+using FiapCloudGames.Identity.Migrations.Seeding;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -6,6 +7,7 @@ namespace FiapCloudGames.Identity.Migrations;
 
 internal sealed class MigrationRunner(
     IdentityDbContext context,
+    AdminSeeder adminSeeder,
     ILogger<MigrationRunner> logger)
 {
     public async Task RunAsync(CancellationToken cancellationToken)
@@ -19,16 +21,19 @@ internal sealed class MigrationRunner(
             if (pending.Length == 0)
             {
                 logger.LogInformation("O banco do Identity já está atualizado.");
-                return;
+            }
+            else
+            {
+                logger.LogInformation(
+                    "Aplicando {MigrationCount} migration(s) do Identity: {Migrations}.",
+                    pending.Length,
+                    string.Join(", ", pending));
+                await context.Database.MigrateAsync(cancellationToken);
+                logger.LogInformation(
+                    "Migrations do Identity aplicadas com sucesso.");
             }
 
-            logger.LogInformation(
-                "Aplicando {MigrationCount} migration(s) do Identity: {Migrations}.",
-                pending.Length,
-                string.Join(", ", pending));
-            await context.Database.MigrateAsync(cancellationToken);
-            logger.LogInformation(
-                "Migrations do Identity aplicadas com sucesso.");
+            await adminSeeder.SeedAsync(cancellationToken);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {

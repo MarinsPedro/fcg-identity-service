@@ -8,6 +8,8 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
   </ItemGroup>
   <ItemGroup>
+    <InternalsVisibleTo Include="FiapCloudGames.Identity.Migrations" />
+    <InternalsVisibleTo Include="FiapCloudGames.Identity.MigrationsTests" />
     <InternalsVisibleTo Include="FiapCloudGames.Identity.UnitTests" />
   </ItemGroup>
 </Project>

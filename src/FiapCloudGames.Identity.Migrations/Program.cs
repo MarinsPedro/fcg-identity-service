@@ -1,5 +1,8 @@
+using FiapCloudGames.Identity.Application.Abstractions;
+using FiapCloudGames.Identity.Infrastructure.Security;
 using FiapCloudGames.Identity.Infrastructure.Persistence;
 using FiapCloudGames.Identity.Migrations;
+using FiapCloudGames.Identity.Migrations.Seeding;
 using Microsoft.Extensions.DependencyInjection;
 
 using var cancellation = new CancellationTokenSource();
@@ -15,6 +18,11 @@ try
     var connectionString = MigrationConnection.GetRequired(builder.Configuration);
     builder.Services.AddDbContext<IdentityDbContext>(options =>
         MigrationDbContextOptions.Configure(options, connectionString));
+    builder.Services.Configure<AdminSeedOptions>(
+        builder.Configuration.GetSection(AdminSeedOptions.SectionName));
+    builder.Services.AddSingleton(TimeProvider.System);
+    builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
+    builder.Services.AddScoped<AdminSeeder>();
     builder.Services.AddScoped<MigrationRunner>();
 
     using var host = builder.Build();

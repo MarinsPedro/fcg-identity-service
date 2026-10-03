@@ -34,6 +34,21 @@ Antes de testar os fluxos:
 3. inicie o Identity;
 4. confirme que o client possui as audiences e os scopes necessários.
 
+Ao executar os projetos com seus perfis `Development`, já ficam disponíveis:
+
+```text
+Administrador:
+  email: admin@fiapcloudgames.com
+  senha: Admin@123456
+
+Service client:
+  client_id: web-bff
+  client_secret: WebBff@123456
+```
+
+Essas credenciais são intencionalmente conhecidas e devem ser usadas somente em
+desenvolvimento local.
+
 Para executar todo o exemplo deste documento, o client precisa de:
 
 ```text
