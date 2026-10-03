@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace FiapCloudGames.Identity.Presentation.Features.Audit;
 
 [ApiController]
-[Route("internal/audit-events")]
+[Route("internal/v1/audit-events")]
 public sealed class SecurityAuditController : ControllerBase
 {
     [Authorize(Policy = IdentityPolicies.AuditRead)]

@@ -8,20 +8,20 @@ e logout.
 
 | Endpoint | Quem chama | Credencial exigida | Finalidade |
 |---|---|---|---|
-| `POST /connect/token` | BFF, Gateway, API ou worker | `client_id` e `client_secret` | emitir token técnico `service` |
-| `POST /internal/users` | aplicação interna autorizada | token `service` + `identity.users.create` | cadastrar usuário |
-| `GET /internal/users/{id}` | aplicação interna autorizada | token `service` + `identity.users.read` | consultar usuário |
-| `PUT /internal/users/{id}` | aplicação interna autorizada | token `service` + `identity.users.write` | alterar nome e e-mail |
-| `DELETE /internal/users/{id}` | aplicação interna autorizada | token `service` + `identity.users.write` | desativar usuário |
-| `POST /internal/clients` | `web-bff` ou client administrador | token `service` + `identity.clients.create` | criar client e obter o segredo uma vez |
-| `GET /internal/clients/{clientId}` | client administrador | token `service` + `identity.clients.read` | consultar dados públicos do client |
-| `PUT /internal/clients/{clientId}/permissions` | client administrador | token `service` + `identity.clients.write` | substituir audiences e scopes |
-| `POST /internal/clients/{clientId}/rotate-secret` | client administrador | token `service` + `identity.clients.write` | rotacionar o segredo |
-| `DELETE /internal/clients/{clientId}` | client administrador | token `service` + `identity.clients.write` | desativar client |
-| `GET /internal/audit-events` | client auditor | token `service` + `identity.audit.read` | consultar eventos administrativos |
-| `POST /api/auth/login` | BFF ou Gateway | credenciais da aplicação e do usuário | iniciar sessão do usuário |
-| `POST /api/auth/refresh` | BFF ou Gateway | credenciais da aplicação + refresh token | renovar a sessão |
-| `POST /api/auth/revoke` | BFF ou Gateway | credenciais da aplicação + refresh token | encerrar a sessão |
+| `POST /oauth2/token` | BFF, Gateway, API ou worker | `client_id` e `client_secret` | emitir token técnico `service` |
+| `POST /internal/v1/users` | aplicação interna autorizada | token `service` + `identity.users.create` | cadastrar usuário |
+| `GET /internal/v1/users/{id}` | aplicação interna autorizada | token `service` + `identity.users.read` | consultar usuário |
+| `PUT /internal/v1/users/{id}` | aplicação interna autorizada | token `service` + `identity.users.write` | alterar nome e e-mail |
+| `DELETE /internal/v1/users/{id}` | aplicação interna autorizada | token `service` + `identity.users.write` | desativar usuário |
+| `POST /internal/v1/service-clients` | `web-bff` ou client administrador | token `service` + `identity.clients.create` | criar client e obter o segredo uma vez |
+| `GET /internal/v1/service-clients/{clientId}` | client administrador | token `service` + `identity.clients.read` | consultar dados públicos do client |
+| `PUT /internal/v1/service-clients/{clientId}/permissions` | client administrador | token `service` + `identity.clients.write` | substituir audiences e scopes |
+| `POST /internal/v1/service-clients/{clientId}/secret/rotate` | client administrador | token `service` + `identity.clients.write` | rotacionar o segredo |
+| `DELETE /internal/v1/service-clients/{clientId}` | client administrador | token `service` + `identity.clients.write` | desativar client |
+| `GET /internal/v1/audit-events` | client auditor | token `service` + `identity.audit.read` | consultar eventos administrativos |
+| `POST /api/v1/auth/login` | BFF ou Gateway | credenciais da aplicação e do usuário | iniciar sessão do usuário |
+| `POST /api/v1/auth/refresh` | BFF ou Gateway | credenciais da aplicação + refresh token | renovar a sessão |
+| `POST /api/v1/auth/revoke` | BFF ou Gateway | credenciais da aplicação + refresh token | encerrar a sessão |
 | `GET /.well-known/openid-configuration` | bibliotecas e infraestrutura | nenhuma | descobrir os metadados do emissor |
 | `GET /.well-known/jwks.json` | APIs que validam JWT | nenhuma | obter a chave pública de assinatura |
 | `GET /health/live` | infraestrutura | nenhuma | verificar se o processo está vivo |
@@ -32,6 +32,19 @@ dizer que não recebem um JWT no header `Authorization`; eles validam as
 credenciais enviadas em seu próprio contrato. O ícone de cadeado pode aparecer
 no Swagger porque o esquema Bearer é registrado globalmente, mas o servidor não
 exige Bearer nesses endpoints.
+
+## Convenção das URLs
+
+- `/api/v1` identifica contratos de autenticação usados pelas pontas;
+- `/internal/v1` identifica contratos entre aplicações da plataforma;
+- `/oauth2` contém endpoints do protocolo OAuth;
+- `/.well-known` e `/health` são contratos de protocolo e infraestrutura e não
+  recebem a versão da API.
+
+O segmento `internal` comunica a intenção da rota, mas não é um mecanismo de
+segurança. Essas rotas continuam protegidas por JWT de serviço, audience,
+scopes e controles de rede. As URLs antigas não são mantidas como aliases;
+consumidores devem migrar para os contratos versionados.
 
 ## Pré-requisitos
 
@@ -84,19 +97,19 @@ navegador ou aplicativo do usuário.
 Em um banco novo ainda não existe usuário para realizar login. A sequência é:
 
 ```text
-1. POST /connect/token
+1. POST /oauth2/token
         │ token service para identity-api
         ▼
-2. POST /internal/users
+2. POST /internal/v1/users
         │ usuário criado
         ▼
-3. POST /api/auth/login
+3. POST /api/v1/auth/login
         │ access token user + refresh token
         ▼
 4. usar a sessão na ponta
         │
-        ├── POST /api/auth/refresh  quando precisar renovar
-        └── POST /api/auth/revoke   no logout
+        ├── POST /api/v1/auth/refresh  quando precisar renovar
+        └── POST /api/v1/auth/revoke   no logout
 ```
 
 Os endpoints de discovery podem ser consultados a qualquer momento. Eles não
@@ -106,7 +119,7 @@ precisam ser chamados antes de cada login ou de cada validação.
 
 ### 1. Obter um token de serviço
 
-Abra `POST /connect/token`, clique em **Try it out** e informe os campos como
+Abra `POST /oauth2/token`, clique em **Try it out** e informe os campos como
 `application/x-www-form-urlencoded`:
 
 ```text
@@ -131,22 +144,22 @@ Authorization: Bearer <token-service>
 
 ### 3. Criar o usuário
 
-Execute `POST /internal/users` com nome, e-mail e senha. Guarde o `id` retornado;
+Execute `POST /internal/v1/users` com nome, e-mail e senha. Guarde o `id` retornado;
 ele será usado nas operações de consulta, atualização e desativação.
 
 ### 4. Realizar o login
 
-Execute `POST /api/auth/login` com o mesmo e-mail e senha do usuário, além das
+Execute `POST /api/v1/auth/login` com o mesmo e-mail e senha do usuário, além das
 credenciais do client autorizado a emitir tokens de usuário.
 
 ### 5. Renovar ou encerrar a sessão
 
-Use o `refreshToken` retornado no login em `/api/auth/refresh`. Quando houver
-logout, envie o refresh token atual para `/api/auth/revoke`.
+Use o `refreshToken` retornado no login em `/api/v1/auth/refresh`. Quando houver
+logout, envie o refresh token atual para `/api/v1/auth/revoke`.
 
 ## Detalhamento dos endpoints
 
-### `POST /connect/token`
+### `POST /oauth2/token`
 
 Emite um JWT de aplicação com `token_use=service`. É usado para chamadas entre
 BFF, Gateway, APIs e workers.
@@ -154,7 +167,7 @@ BFF, Gateway, APIs e workers.
 O body é `application/x-www-form-urlencoded`, não JSON:
 
 ```http
-POST /connect/token
+POST /oauth2/token
 Content-Type: application/x-www-form-urlencoded
 
 grant_type=client_credentials&client_id=web-bff&client_secret=SEU_SEGREDO&audience=identity-api&scope=identity.users.create
@@ -183,7 +196,7 @@ Regras importantes:
 - o chamador deve manter o token em cache até próximo do vencimento, em vez de
   solicitar outro a cada requisição.
 
-Para acessar `/internal/users`, a audience obrigatória é `identity-api`.
+Para acessar `/internal/v1/users`, a audience obrigatória é `identity-api`.
 
 ### Gerenciamento de service clients
 
@@ -191,7 +204,7 @@ Esses endpoints usam audience `identity-api`. Eles devem ser chamados por um
 client administrativo com o scope indicado, nunca por navegador ou aplicativo
 externo.
 
-#### `POST /internal/clients`
+#### `POST /internal/v1/service-clients`
 
 Cria as credenciais de uma API, worker, BFF ou Gateway. O segredo é gerado pelo
 Identity e retornado somente nesta resposta:
@@ -209,48 +222,48 @@ Identity e retornado somente nesta resposta:
 A resposta `201 Created` contém `client` e `clientSecret`. Copie imediatamente
 o segredo para o secret manager. O endpoint de consulta nunca o mostrará.
 
-#### `GET /internal/clients/{clientId}`
+#### `GET /internal/v1/service-clients/{clientId}`
 
 Retorna nome, estado, audiences e scopes. Não retorna `client_secret` nem o hash
 persistido. Exige `identity.clients.read`.
 
-#### `PUT /internal/clients/{clientId}/permissions`
+#### `PUT /internal/v1/service-clients/{clientId}/permissions`
 
 Substitui integralmente as audiences e scopes atuais. Valores omitidos deixam
 de ser permitidos, portanto envie o conjunto completo desejado. Exige
 `identity.clients.write`.
 
-#### `POST /internal/clients/{clientId}/rotate-secret`
+#### `POST /internal/v1/service-clients/{clientId}/secret/rotate`
 
 Gera um novo segredo, invalida o anterior imediatamente e devolve o novo valor
 uma única vez. Exige `identity.clients.write`. Faça a distribuição pelo secret
 manager antes de reiniciar o consumidor.
 
-#### `DELETE /internal/clients/{clientId}`
+#### `DELETE /internal/v1/service-clients/{clientId}`
 
 Desativa logicamente o client, bloqueando novas emissões de token. O chamador
 não pode desativar a própria credencial. Exige `identity.clients.write`.
 
-### `GET /internal/audit-events`
+### `GET /internal/v1/audit-events`
 
 Retorna os eventos mais recentes de provisionamento e gerenciamento de service
 clients. O parâmetro `take` aceita de 1 a 200 e usa 100 quando omitido.
 
 ```http
-GET /internal/audit-events?take=50
+GET /internal/v1/audit-events?take=50
 Authorization: Bearer <token-service>
 ```
 
 Exige `identity.audit.read`. Os eventos não contêm segredo, hash ou JWT.
 
-### `POST /internal/users`
+### `POST /internal/v1/users`
 
 Cadastra um usuário. Não é um endpoint público de auto cadastro: somente uma
 aplicação interna com token `service` e scope `identity.users.create` pode
 chamá-lo.
 
 ```http
-POST /internal/users
+POST /internal/v1/users
 Authorization: Bearer <token-service>
 Content-Type: application/json
 
@@ -277,25 +290,25 @@ Resposta `201 Created`:
 A senha deve ter pelo menos oito caracteres e conter letra, número e caractere
 especial. O e-mail deve ser único.
 
-### `GET /internal/users/{id}`
+### `GET /internal/v1/users/{id}`
 
 Consulta um usuário pelo `Guid`. Exige token `service`, audience `identity-api`
 e scope `identity.users.read`.
 
 ```http
-GET /internal/users/47de4c37-34ab-4084-a293-e46229c34aad
+GET /internal/v1/users/47de4c37-34ab-4084-a293-e46229c34aad
 Authorization: Bearer <token-service>
 ```
 
 Retorna `200 OK` com `UserResponse` ou `404 Not Found` quando o ID não existe.
 
-### `PUT /internal/users/{id}`
+### `PUT /internal/v1/users/{id}`
 
 Altera somente nome e e-mail. Não troca senha, role ou estado do usuário. Exige
 token `service`, audience `identity-api` e scope `identity.users.write`.
 
 ```http
-PUT /internal/users/47de4c37-34ab-4084-a293-e46229c34aad
+PUT /internal/v1/users/47de4c37-34ab-4084-a293-e46229c34aad
 Authorization: Bearer <token-service>
 Content-Type: application/json
 
@@ -308,27 +321,27 @@ Content-Type: application/json
 Retorna `200 OK` com o usuário atualizado, `404 Not Found` para ID inexistente
 ou `409 Conflict` quando o novo e-mail já está em uso.
 
-### `DELETE /internal/users/{id}`
+### `DELETE /internal/v1/users/{id}`
 
 Desativa logicamente o usuário; nenhum registro é removido do banco. Exige
 token `service`, audience `identity-api` e scope `identity.users.write`.
 
 ```http
-DELETE /internal/users/47de4c37-34ab-4084-a293-e46229c34aad
+DELETE /internal/v1/users/47de4c37-34ab-4084-a293-e46229c34aad
 Authorization: Bearer <token-service>
 ```
 
 Retorna `204 No Content`. Um usuário desativado não consegue fazer login nem
 renovar a sessão. Uma segunda tentativa retorna `409 Conflict`.
 
-### `POST /api/auth/login`
+### `POST /api/v1/auth/login`
 
 Valida a aplicação, o e-mail, a senha e o estado do usuário. Deve ser chamado
 pelo BFF ou Gateway; o cliente externo não deve conhecer o `client_secret` nem
 chamar o Identity diretamente.
 
 ```http
-POST /api/auth/login
+POST /api/v1/auth/login
 Content-Type: application/json
 
 {
@@ -360,14 +373,14 @@ Resposta `200 OK`:
 
 O access token emitido possui `token_use=user`, `sub` igual ao ID do usuário e
 audience igual ao `client_id` solicitante. Ele é destinado à ponta que realizou
-o login e não autoriza `/internal/users`.
+o login e não autoriza `/internal/v1/users`.
 
-### `POST /api/auth/refresh`
+### `POST /api/v1/auth/refresh`
 
 Renova a sessão sem pedir a senha novamente.
 
 ```http
-POST /api/auth/refresh
+POST /api/v1/auth/refresh
 Content-Type: application/json
 
 {
@@ -381,12 +394,12 @@ Retorna `200 OK` no mesmo formato do login. O refresh token é rotacionado: a
 resposta contém um novo valor e o anterior deixa de ser válido. O chamador deve
 substituir os dois tokens armazenados de forma atômica.
 
-### `POST /api/auth/revoke`
+### `POST /api/v1/auth/revoke`
 
 Revoga o refresh token no logout.
 
 ```http
-POST /api/auth/revoke
+POST /api/v1/auth/revoke
 Content-Type: application/json
 
 {
@@ -429,7 +442,7 @@ rotação das chaves.
 ### Administração de usuários
 
 ```text
-client credentials → token service → /internal/users
+client credentials → token service → /internal/v1/users
 ```
 
 ### Sessão do usuário

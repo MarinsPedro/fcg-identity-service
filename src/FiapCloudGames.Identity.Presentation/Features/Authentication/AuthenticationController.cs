@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace FiapCloudGames.Identity.Presentation.Features.Authentication;
 
 [ApiController]
-[Route("api/auth")]
+[Route("api/v1/auth")]
 public sealed class AuthenticationController : ControllerBase
 {
     [AllowAnonymous]

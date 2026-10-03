@@ -31,7 +31,7 @@ O Identity **não** decide se o usuário pode comprar um jogo, visualizar um ped
 
 ### Token de serviço
 
-1. Uma aplicação ou worker chama `POST /connect/token` com `grant_type=client_credentials`.
+1. Uma aplicação ou worker chama `POST /oauth2/token` com `grant_type=client_credentials`.
 2. O Identity valida o `client_id`, o segredo, a audiência e os escopos solicitados.
 3. O Identity devolve um JWT curto com `token_use=service`, destinado somente à audiência solicitada.
 4. A aplicação mantém esse token em cache até pouco antes da expiração. Não se solicita um token novo a cada chamada.
@@ -191,22 +191,22 @@ docker build `
 
 | Método | Rota | Autenticação | Uso |
 |---|---|---|---|
-| `POST` | `/api/auth/login` | credenciais da aplicação e do usuário | login de usuário |
-| `POST` | `/api/auth/refresh` | credenciais da aplicação + refresh token | rotação do token |
-| `POST` | `/api/auth/revoke` | credenciais da aplicação + refresh token | logout/revogação |
-| `POST` | `/connect/token` | client credentials | token de serviço |
+| `POST` | `/api/v1/auth/login` | credenciais da aplicação e do usuário | login de usuário |
+| `POST` | `/api/v1/auth/refresh` | credenciais da aplicação + refresh token | rotação do token |
+| `POST` | `/api/v1/auth/revoke` | credenciais da aplicação + refresh token | logout/revogação |
+| `POST` | `/oauth2/token` | client credentials | token de serviço |
 | `GET` | `/.well-known/jwks.json` | anônimo | chave pública para validação local |
 | `GET` | `/.well-known/openid-configuration` | anônimo | metadados do emissor |
-| `POST` | `/internal/users` | service + `identity.users.create` | cria usuário |
-| `GET` | `/internal/users/{id}` | service + `identity.users.read` | consulta usuário |
-| `PUT` | `/internal/users/{id}` | service + `identity.users.write` | altera usuário |
-| `DELETE` | `/internal/users/{id}` | service + `identity.users.write` | desativa usuário |
-| `POST` | `/internal/clients` | service + `identity.clients.create` | cria client e exibe o segredo uma vez |
-| `GET` | `/internal/clients/{clientId}` | service + `identity.clients.read` | consulta client sem expor segredo/hash |
-| `PUT` | `/internal/clients/{clientId}/permissions` | service + `identity.clients.write` | substitui audiences e scopes |
-| `POST` | `/internal/clients/{clientId}/rotate-secret` | service + `identity.clients.write` | rotaciona e exibe o novo segredo uma vez |
-| `DELETE` | `/internal/clients/{clientId}` | service + `identity.clients.write` | desativa client |
-| `GET` | `/internal/audit-events` | service + `identity.audit.read` | consulta auditoria administrativa |
+| `POST` | `/internal/v1/users` | service + `identity.users.create` | cria usuário |
+| `GET` | `/internal/v1/users/{id}` | service + `identity.users.read` | consulta usuário |
+| `PUT` | `/internal/v1/users/{id}` | service + `identity.users.write` | altera usuário |
+| `DELETE` | `/internal/v1/users/{id}` | service + `identity.users.write` | desativa usuário |
+| `POST` | `/internal/v1/service-clients` | service + `identity.clients.create` | cria client e exibe o segredo uma vez |
+| `GET` | `/internal/v1/service-clients/{clientId}` | service + `identity.clients.read` | consulta client sem expor segredo/hash |
+| `PUT` | `/internal/v1/service-clients/{clientId}/permissions` | service + `identity.clients.write` | substitui audiences e scopes |
+| `POST` | `/internal/v1/service-clients/{clientId}/secret/rotate` | service + `identity.clients.write` | rotaciona e exibe o novo segredo uma vez |
+| `DELETE` | `/internal/v1/service-clients/{clientId}` | service + `identity.clients.write` | desativa client |
+| `GET` | `/internal/v1/audit-events` | service + `identity.audit.read` | consulta auditoria administrativa |
 | `GET` | `/health/live` | anônimo | confirma que o processo está vivo |
 | `GET` | `/health/ready` | anônimo | confirma que a API e o banco estão prontos |
 

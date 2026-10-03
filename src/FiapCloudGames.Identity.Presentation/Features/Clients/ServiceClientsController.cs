@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace FiapCloudGames.Identity.Presentation.Features.Clients;
 
 [ApiController]
-[Route("internal/clients")]
+[Route("internal/v1/service-clients")]
 public sealed class ServiceClientsController : ControllerBase
 {
     [Authorize(Policy = IdentityPolicies.ClientsCreate)]
@@ -27,7 +27,9 @@ public sealed class ServiceClientsController : ControllerBase
             request.ToInput(),
             GetActorClientId(),
             cancellationToken)).ToResponse();
-        return Created($"/internal/clients/{response.Client.ClientId}", response);
+        return Created(
+            $"/internal/v1/service-clients/{response.Client.ClientId}",
+            response);
     }
 
     [Authorize(Policy = IdentityPolicies.ClientsRead)]
@@ -56,7 +58,7 @@ public sealed class ServiceClientsController : ControllerBase
                 cancellationToken)));
 
     [Authorize(Policy = IdentityPolicies.ClientsWrite)]
-    [HttpPost("{clientId}/rotate-secret")]
+    [HttpPost("{clientId}/secret/rotate")]
     [ProducesResponseType<RotateServiceClientSecretResponse>(StatusCodes.Status200OK)]
     public async Task<ActionResult<RotateServiceClientSecretResponse>> RotateSecretAsync(
         string clientId,

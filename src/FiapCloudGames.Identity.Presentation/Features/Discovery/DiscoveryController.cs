@@ -21,7 +21,7 @@ public sealed class DiscoveryController(ITokenDiscoveryProvider tokens) : Contro
         var authority = $"{Request.Scheme}://{Request.Host}";
         return Ok(new OpenIdConfigurationResponse(
             tokens.Issuer,
-            $"{authority}/connect/token",
+            $"{authority}/oauth2/token",
             $"{authority}/.well-known/jwks.json",
             ["client_credentials"],
             ["client_secret_post"],

@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace FiapCloudGames.Identity.Presentation.Features.Users;
 
 [ApiController]
-[Route("internal/users")]
+[Route("internal/v1/users")]
 public sealed class UsersController : ControllerBase
 {
     [Authorize(Policy = IdentityPolicies.UsersCreate)]
@@ -26,7 +26,7 @@ public sealed class UsersController : ControllerBase
             request.ToInput(),
             cancellationToken);
         var response = result.ToResponse();
-        return Created($"/internal/users/{response.Id}", response);
+        return Created($"/internal/v1/users/{response.Id}", response);
     }
 
     [Authorize(Policy = IdentityPolicies.UsersRead)]

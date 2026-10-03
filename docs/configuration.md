@@ -121,9 +121,9 @@ do client inicial são usadas somente como entrada da seed; não são armazenada
 concatenada.
 
 Depois do provisionamento, crie os clients de APIs e workers por
-`POST /internal/clients`. O Identity gera o segredo com aleatoriedade
+`POST /internal/v1/service-clients`. O Identity gera o segredo com aleatoriedade
 criptográfica e o mostra uma única vez. Use
-`POST /internal/clients/{clientId}/rotate-secret` para rotação. A rotação
+`POST /internal/v1/service-clients/{clientId}/secret/rotate` para rotação. A rotação
 invalida imediatamente o segredo anterior; distribua o novo segredo de forma
 coordenada pelo secret manager.
 
@@ -148,7 +148,7 @@ A seed não sobrescreve um client existente. Portanto, alterar
 As operações de criação, alteração de permissões, rotação e desativação de
 service clients geram registros em `identity.security_audit_events`. O
 provisionamento inicial também é registrado com ator `identity-migrations`.
-Consulte os eventos por `GET /internal/audit-events`, usando o scope
+Consulte os eventos por `GET /internal/v1/audit-events`, usando o scope
 `identity.audit.read`. Segredos e hashes não fazem parte do evento.
 
 ## Validação nas APIs consumidoras

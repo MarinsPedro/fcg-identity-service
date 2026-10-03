@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace FiapCloudGames.Identity.Presentation.Features.Authentication;
 
 [ApiController]
-[Route("connect")]
+[Route("oauth2")]
 public sealed class TokenController : ControllerBase
 {
     [AllowAnonymous]

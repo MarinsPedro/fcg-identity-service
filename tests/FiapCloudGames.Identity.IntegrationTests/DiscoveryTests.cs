@@ -34,11 +34,28 @@ public sealed class DiscoveryTests(IdentityApiFactory factory)
     }
 
     [Fact]
+    public async Task OpenIdConfiguration_PublishesOAuth2TokenEndpoint()
+    {
+        using var client = factory.CreateClient();
+        using var response = await client.GetAsync(
+            "/.well-known/openid-configuration");
+        var document = await response.Content.ReadFromJsonAsync<JsonObject>();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var tokenEndpoint = document?["token_endpoint"]?.GetValue<string>();
+        Assert.NotNull(tokenEndpoint);
+        Assert.EndsWith(
+            "/oauth2/token",
+            tokenEndpoint,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Login_InvalidContract_ReturnsValidationProblem()
     {
         using var client = factory.CreateClient();
         using var response = await client.PostAsJsonAsync(
-            "/api/auth/login",
+            "/api/v1/auth/login",
             new
             {
                 email = "invalid",
@@ -57,7 +74,7 @@ public sealed class DiscoveryTests(IdentityApiFactory factory)
         using var client = factory.CreateClient();
         await factory.EnsureServiceClientAsync();
         using var tokenResponse = await client.PostAsync(
-            "/connect/token",
+            "/oauth2/token",
             new FormUrlEncodedContent(new Dictionary<string, string>
             {
                 ["grant_type"] = "client_credentials",
@@ -79,7 +96,7 @@ public sealed class DiscoveryTests(IdentityApiFactory factory)
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", serviceToken);
         using var createResponse = await client.PostAsJsonAsync(
-            "/internal/users",
+            "/internal/v1/users",
             new
             {
                 name = "Integration User",
@@ -90,7 +107,7 @@ public sealed class DiscoveryTests(IdentityApiFactory factory)
 
         client.DefaultRequestHeaders.Authorization = null;
         using var loginResponse = await client.PostAsJsonAsync(
-            "/api/auth/login",
+            "/api/v1/auth/login",
             new
             {
                 email = "integration@example.com",
@@ -105,7 +122,7 @@ public sealed class DiscoveryTests(IdentityApiFactory factory)
         Assert.False(string.IsNullOrWhiteSpace(refreshToken));
 
         using var revokeResponse = await client.PostAsJsonAsync(
-            "/api/auth/revoke",
+            "/api/v1/auth/revoke",
             new
             {
                 refreshToken,
@@ -115,7 +132,7 @@ public sealed class DiscoveryTests(IdentityApiFactory factory)
         Assert.Equal(HttpStatusCode.NoContent, revokeResponse.StatusCode);
 
         using var refreshResponse = await client.PostAsJsonAsync(
-            "/api/auth/refresh",
+            "/api/v1/auth/refresh",
             new
             {
                 refreshToken,
