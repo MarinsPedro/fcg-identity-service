@@ -6,6 +6,7 @@
   <ItemGroup>
     <Using Include="Xunit" />
     <ProjectReference Include="../../src/FiapCloudGames.Identity.Api/FiapCloudGames.Identity.Api.csproj" />
+    <ProjectReference Include="../../src/FiapCloudGames.Identity.Migrations/FiapCloudGames.Identity.Migrations.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />

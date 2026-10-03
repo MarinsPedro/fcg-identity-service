@@ -43,25 +43,28 @@ Não existe token `delegated`, cadeia `act` ou `origin_client_id` neste desenho.
 ```text
 src/
   FiapCloudGames.Identity.Api/             composition root e pipeline
-  FiapCloudGames.Identity.Application/     casos de uso, Inputs, Results e portas
-  FiapCloudGames.Identity.Domain/          entidades e regras do domínio
-  FiapCloudGames.Identity.Infrastructure/  PostgreSQL, hashing e emissão JWT
+  FiapCloudGames.Identity.Application/     casos de uso e portas técnicas
+  FiapCloudGames.Identity.Domain/          agregados e regras do domínio
+  FiapCloudGames.Identity.Infrastructure/  EF Core, repositories, hashing e JWT
   FiapCloudGames.Identity.Presentation/    Controllers, Requests, Responses e mappings HTTP
-  FiapCloudGames.Identity.Migrations/      migrations e atualizador do banco
+  FiapCloudGames.Identity.Migrations/      migrations, seeds e atualizador do banco
 tests/
   FiapCloudGames.Identity.ArchitectureTests/
+  FiapCloudGames.Identity.Database.IntegrationTests/
   FiapCloudGames.Identity.IntegrationTests/
-  FiapCloudGames.Identity.MigrationsTests/
   FiapCloudGames.Identity.UnitTests/
 docs/
   architecture.md
   configuration.md
   endpoints.md
+  testing.md
 ```
 
 As regras e exemplos da estrutura estão em [docs/architecture.md](docs/architecture.md).
 O uso, os contratos e a ordem recomendada dos endpoints estão em
 [docs/endpoints.md](docs/endpoints.md).
+A estratégia e as fronteiras das suítes de teste estão em
+[docs/testing.md](docs/testing.md).
 
 ## Pré-requisitos
 

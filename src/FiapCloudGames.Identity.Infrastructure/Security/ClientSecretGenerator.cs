@@ -1,5 +1,5 @@
 using System.Security.Cryptography;
-using FiapCloudGames.Identity.Application.Abstractions;
+using FiapCloudGames.Identity.Application.Abstractions.Security;
 
 namespace FiapCloudGames.Identity.Infrastructure.Security;
 

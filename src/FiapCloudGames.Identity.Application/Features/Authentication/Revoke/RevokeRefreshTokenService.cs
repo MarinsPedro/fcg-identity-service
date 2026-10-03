@@ -1,6 +1,7 @@
-using FiapCloudGames.Identity.Application.Abstractions;
+using FiapCloudGames.Identity.Application.Abstractions.Security;
 using FiapCloudGames.Identity.Application.Abstractions.Persistence;
-using FiapCloudGames.Identity.Domain.Repositories;
+using FiapCloudGames.Identity.Application.Features.Authentication.Common;
+using FiapCloudGames.Identity.Domain.Sessions;
 
 namespace FiapCloudGames.Identity.Application.Features.Authentication.Revoke;
 

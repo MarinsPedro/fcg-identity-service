@@ -1,4 +1,3 @@
-using FiapCloudGames.Identity.Application.Features.Authentication.ClientCredentials;
 using FiapCloudGames.Identity.Application.Features.Authentication.Login;
 using FiapCloudGames.Identity.Application.Features.Authentication.Refresh;
 using FiapCloudGames.Identity.Application.Features.Authentication.Revoke;
@@ -32,7 +31,4 @@ internal static class AuthenticationHttpMappings
             result.ExpiresIn,
             result.RefreshToken,
             result.User.ToResponse());
-
-    public static ServiceTokenResponse ToResponse(this ServiceTokenResult result) =>
-        new(result.AccessToken, result.TokenType, result.ExpiresIn, result.Scope);
 }

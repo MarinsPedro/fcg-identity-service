@@ -1,4 +1,4 @@
-using FiapCloudGames.Identity.Domain.Entities;
+using FiapCloudGames.Identity.Domain.Users;
 
 namespace FiapCloudGames.Identity.Application.Features.Users;
 

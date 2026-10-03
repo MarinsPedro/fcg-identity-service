@@ -1,4 +1,5 @@
 using FiapCloudGames.BuildingBlocks.Authentication;
+using FiapCloudGames.Identity.Presentation.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 

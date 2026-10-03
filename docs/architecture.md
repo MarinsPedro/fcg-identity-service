@@ -1,9 +1,8 @@
 # Arquitetura do Identity Service
 
-O serviço mantém as mesmas convenções do monólito: Clean Architecture, DDD,
-organização vertical por feature e separação entre contratos HTTP e casos de
-uso. O monólito é somente a referência; nenhuma alteração nele é necessária
-para evoluir este repositório.
+O Identity usa Clean Architecture, DDD e organização vertical por caso de uso.
+Contratos HTTP, regras de aplicação, modelo de domínio e detalhes técnicos ficam
+em projetos distintos.
 
 ## Direção das dependências
 
@@ -13,130 +12,201 @@ API ───────────→ Infrastructure ──→ Application �
 Migrations ───────→ Infrastructure
 ```
 
-As setas apontam para o projeto conhecido pela origem. Uma camada externa
-conhece uma camada interna; o inverso não ocorre.
-
-| Projeto | Responsabilidade | Dependências de projeto permitidas |
+| Projeto | Responsabilidade | Referências permitidas |
 |---|---|---|
-| Domain | agregados, entidades, value objects, invariantes e repositories | nenhuma |
+| Domain | agregados, entidades, value objects, invariantes e contratos de repository dos agregados | nenhuma |
 | Application | casos de uso, Inputs, Results e portas técnicas | Domain |
 | Infrastructure | EF Core, repositories, hashing, JWT e health checks | Application e Domain |
-| Presentation | Controllers, Requests, Responses e mappings HTTP | Application |
-| API | composition root, middleware e pipeline | Infrastructure e Presentation |
-| Migrations | migrations EF Core e atualização explícita do banco | Infrastructure |
+| Presentation | Controllers, Requests, Responses, autorização e mappings HTTP | Application |
+| API | composition root, configuração e pipeline | Infrastructure e Presentation |
+| Migrations | design-time factory, migrations, execução e seeds iniciais | Infrastructure |
 
-`FiapCloudGames.Identity.ArchitectureTests` fiscaliza essa matriz para impedir
-dependências acidentais.
+`FiapCloudGames.Identity.ArchitectureTests` fiscaliza essa matriz e as fronteiras
+dos testes unitários.
 
-## Organização por feature
-
-Application e Presentation são agrupadas pelo comportamento, e não por uma
-pasta genérica de services ou DTOs:
+## Domain organizado por agregado
 
 ```text
-Application/Features/
-  Authentication/
-    Login/       LoginInput, LoginResult, LoginService
-    Refresh/     RefreshUserTokenInput, Result e Service
-    Revoke/      RevokeRefreshTokenInput e Service
-    ClientCredentials/
+Domain/
+  Common/
+    DomainRuleViolationException.cs
   Users/
-    CreateUser/
-    GetUser/
-    UpdateUser/
-    DeactivateUser/
-  Clients/
-    CreateClient/
-    GetClient/
-    UpdatePermissions/
-    RotateSecret/
-    DeactivateClient/
-  Audit/
-
-Presentation/Features/
-  Authentication/
-  Discovery/
-  Users/
-  Clients/
-  Audit/
+    User.cs
+    Email.cs
+    Password.cs
+    UserRole.cs
+    IUserRepository.cs
+  ServiceClients/
+    ServiceClient.cs
+    ServiceClientAudience.cs
+    ServiceClientScope.cs
+    IServiceClientRepository.cs
+  Sessions/
+    RefreshToken.cs
+    IRefreshTokenRepository.cs
+  Auditing/
+    SecurityAuditEvent.cs
 ```
 
-Cada caso de uso expõe `ExecuteAsync`, recebe um Input sem semântica HTTP,
-propaga `CancellationToken` e devolve um Result. Controllers adaptam o contrato
-HTTP e nunca devolvem entidades de domínio diretamente.
+Uma pasta representa um agregado ou um conceito coeso. Entidade, value objects,
+enumerações e interface do repository da raiz permanecem próximos. `Common`
+contém somente conceitos realmente compartilhados pelo domínio; não é um local
+genérico para classes sem destino definido.
 
-## Persistência
+`ServiceClient` é a raiz do agregado que controla audiences e scopes. Essas
+coleções não são alteradas diretamente por Application ou Infrastructure.
+`RefreshToken` pertence ao ciclo de sessões e não ao agregado de usuário.
 
-- interfaces de repository de agregados pertencem ao Domain;
-- `IIdentityUnitOfWork` pertence à Application;
-- repositories e `IdentityDbContext` pertencem à Infrastructure;
-- o `DbContext` implementa somente a unidade de trabalho, não um repository
-  genérico com todas as operações;
-- escrita usa tracking; novas consultas somente de leitura devem usar
-  `AsNoTracking`;
-- entidades e `IQueryable` não atravessam a fronteira da Infrastructure.
+## Application organizada por caso de uso
 
-As permissões dos clients são normalizadas. `service_client_scopes` e
+```text
+Application/
+  Abstractions/
+    Auditing/
+    Persistence/
+    Security/
+  Features/
+    Authentication/
+      Common/
+      ClientCredentials/
+      Login/
+      Refresh/
+      Revoke/
+    Users/
+      Create/
+      Get/
+      Update/
+      Deactivate/
+    ServiceClients/
+      Create/
+      Get/
+      UpdatePermissions/
+      RotateSecret/
+      Deactivate/
+    Auditing/
+      GetSecurityAuditEvents/
+```
+
+Os nomes das pastas descrevem o comportamento sem repetir sufixos como
+`CreateUser/CreateUserService`. Cada caso de uso expõe `ExecuteAsync`, recebe um
+Input sem semântica HTTP, propaga `CancellationToken` e devolve um Result.
+
+As portas técnicas ficam em `Abstractions`:
+
+- `Security`: hashing, proteção de refresh token e emissão de JWT;
+- `Persistence`: unidade de trabalho;
+- `Auditing`: persistência e consulta de auditoria, pois auditoria não é uma
+  raiz de agregado manipulada diretamente pelos consumidores do Domain.
+
+## Presentation organizada por recurso HTTP
+
+```text
+Presentation/
+  Authorization/
+  Features/
+    Authentication/
+    OAuth/
+    Discovery/
+    Users/
+    ServiceClients/
+    Auditing/
+```
+
+`Authentication` contém login, refresh e revoke. `OAuth` contém o endpoint
+padronizado de client credentials. `Discovery` publica os documentos públicos.
+Os Controllers adaptam o protocolo HTTP para os casos de uso e nunca devolvem
+entidades de domínio diretamente.
+
+Requests, Responses e mappings permanecem próximos do Controller do recurso.
+Policies ficam em `Authorization`, evitando dependências circulares entre
+features.
+
+## Infrastructure e EF Core
+
+```text
+Infrastructure/
+  Authentication/
+  Health/
+  Persistence/
+    Configurations/
+      UserConfiguration.cs
+      ServiceClientConfiguration.cs
+      ServiceClientAudienceConfiguration.cs
+      ServiceClientScopeConfiguration.cs
+      RefreshTokenConfiguration.cs
+      SecurityAuditEventConfiguration.cs
+    Repositories/
+      UserRepository.cs
+      ServiceClientRepository.cs
+      RefreshTokenRepository.cs
+      SecurityAuditRepository.cs
+    IdentityDbContext.cs
+  Security/
+```
+
+`IdentityDbContext` declara os `DbSet`, define o schema padrão e descobre as
+configurações com `ApplyConfigurationsFromAssembly`. Cada tipo possui uma
+implementação de `IEntityTypeConfiguration<T>` própria. Isso mantém o contexto
+pequeno e permite alterar um mapping sem editar uma classe central extensa.
+
+Repositories concretos ficam somente em `Persistence/Repositories`. Interfaces
+dos agregados ficam no Domain; portas técnicas ficam na Application. Não há
+repository genérico e `IQueryable` não atravessa a Infrastructure.
+
+As permissões são normalizadas: `service_client_scopes` e
 `service_client_audiences` possuem uma linha por associação e chave composta
-com `client_id`. `ServiceClient` continua sendo a raiz do agregado e controla
-concessão, remoção e verificação dessas coleções. O repository sempre carrega as
-duas coleções ao autenticar um client.
+com `client_id`. As mutações administrativas persistem um
+`SecurityAuditEvent` na mesma unidade de trabalho, sem segredo, hash ou JWT.
 
-As mutações administrativas do agregado `ServiceClient` persistem um
-`SecurityAuditEvent` na mesma unidade de trabalho. O evento registra tipo,
-client ator, tipo/ID do alvo e instante UTC, mas nunca segredo, hash ou JWT.
+## Migrations
 
-Como este é um microserviço com banco próprio, as migrations e o snapshot ficam
-em `FiapCloudGames.Identity.Migrations`. Esse projeto é um executável que aplica
-somente o banco do Identity. Ele depende de Infrastructure; API e Infrastructure
-não dependem dele. A API nunca altera schema durante o startup.
+```text
+Migrations/
+  Configuration/
+  DesignTime/
+  Migrations/
+  Seeding/
+  MigrationRunner.cs
+  Program.cs
+```
 
-Em desenvolvimento, execute o migrador antes da API. Em Kubernetes, execute a
-imagem `migrations` como Job antes do rollout. Uma falha encerra com código `1`;
-cancelamento encerra com código `2`, impedindo que o deploy prossiga como se o
-banco estivesse atualizado. Depois das migrations, o mesmo executável realiza
-as seeds idempotentes do administrador e do único client inicial `web-bff`.
-Outros clients são criados pela API administrativa.
+O projeto é um executável independente. `Configuration` resolve a connection
+string e configura o `DbContext`; `DesignTime` atende `dotnet ef` e Package
+Manager Console; `Migrations` contém somente artefatos gerados pelo EF;
+`Seeding` contém o provisionamento inicial idempotente.
 
-O migrador registra o `IdentityDbContext` e o executor no container de DI, usa
-`ILogger` para logs estruturados e aplica retry limitado para falhas transitórias
-do PostgreSQL. `FiapCloudGames.Identity.MigrationsTests` garante que:
-
-- as migrations são descobertas pelo EF Core;
-- o modelo não divergiu do snapshot;
-- o assembly de migrations é o projeto correto;
-- schema, tabelas e colunas seguem as convenções do Identity.
+A API nunca altera o schema no startup. Em desenvolvimento, execute o migrador
+antes da API. Em produção, execute-o como uma etapa ou Job anterior ao rollout.
 
 ## Onde implementar uma mudança
 
 | Mudança | Local |
 |---|---|
-| invariante ou comportamento da entidade | Domain |
-| contrato de acesso ao agregado | Domain/Repositories |
-| coordenação de uma operação | Application/Features |
-| abstração de recurso técnico | Application/Abstractions |
-| EF Core, repository, JWT ou hashing | Infrastructure |
-| migration, snapshot ou execução de atualização do schema | Migrations |
-| rota, Request, Response ou mapping HTTP | Presentation/Features |
-| registro final e pipeline | API/Program.cs |
-| regra estrutural | ArchitectureTests |
+| invariante ou comportamento de agregado | `Domain/<Agregado>` |
+| contrato de persistência de uma raiz de agregado | `Domain/<Agregado>` |
+| coordenação de uma operação | `Application/Features/<Recurso>/<CasoDeUso>` |
+| abstração de recurso técnico | `Application/Abstractions/<Categoria>` |
+| mapping EF Core | `Infrastructure/Persistence/Configurations` |
+| repository concreto | `Infrastructure/Persistence/Repositories` |
+| migration, snapshot ou seed inicial | `Migrations` |
+| rota, Request, Response ou mapping HTTP | `Presentation/Features/<Recurso>` |
+| configuração final e pipeline | `Api/Program.cs` |
+| regra estrutural | `ArchitectureTests` |
 
-## Contracts entre serviços
+## Testes
 
-Não existe um projeto `Contracts` vazio neste momento. Ele deve ser criado
-quando aparecer um contrato real consumido por outro serviço, como eventos de
-integração ou um SDK público. Outros serviços não devem referenciar Domain,
-Application, Infrastructure ou Presentation do Identity.
+A estratégia, os limites de cada suíte e as convenções obrigatórias estão em
+[testing.md](testing.md).
 
 ## Checklist para uma feature
 
 - a regra pertence ao bounded context Identity;
-- o Domain permanece válido após toda operação;
+- o agregado permanece válido após toda operação;
 - Application depende de abstrações, nunca de EF Core ou HTTP;
 - Request e Response permanecem na Presentation;
 - nenhum segredo, senha ou token é registrado em log;
-- autorização e escopos foram definidos explicitamente;
+- autorização e scopes foram definidos explicitamente;
 - erros continuam usando Problem Details do Building Blocks;
-- testes unitários cobrem regras e casos de uso;
-- testes de integração cobrem contrato e pipeline;
+- testes unitários cobrem regras e decisões do caso de uso;
+- testes de integração cobrem contrato, host ou componente técnico;
 - testes de arquitetura continuam aprovados.

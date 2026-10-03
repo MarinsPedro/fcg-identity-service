@@ -24,6 +24,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <InternalsVisibleTo Include="FiapCloudGames.Identity.MigrationsTests" />
+    <InternalsVisibleTo Include="FiapCloudGames.Identity.Database.IntegrationTests" />
+    <InternalsVisibleTo Include="FiapCloudGames.Identity.IntegrationTests" />
   </ItemGroup>
 </Project>

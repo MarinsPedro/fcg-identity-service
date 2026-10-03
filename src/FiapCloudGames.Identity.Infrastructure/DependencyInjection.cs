@@ -1,12 +1,15 @@
 using FiapCloudGames.BuildingBlocks.Authentication;
 using FiapCloudGames.Identity.Application;
-using FiapCloudGames.Identity.Application.Abstractions;
+using FiapCloudGames.Identity.Application.Abstractions.Auditing;
 using FiapCloudGames.Identity.Application.Abstractions.Persistence;
 using FiapCloudGames.Identity.Application.Abstractions.Security;
-using FiapCloudGames.Identity.Domain.Repositories;
+using FiapCloudGames.Identity.Domain.ServiceClients;
+using FiapCloudGames.Identity.Domain.Sessions;
+using FiapCloudGames.Identity.Domain.Users;
 using FiapCloudGames.Identity.Infrastructure.Authentication;
 using FiapCloudGames.Identity.Infrastructure.Health;
 using FiapCloudGames.Identity.Infrastructure.Persistence;
+using FiapCloudGames.Identity.Infrastructure.Persistence.Repositories;
 using FiapCloudGames.Identity.Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;

@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
-using FiapCloudGames.Identity.Application.Abstractions;
-using FiapCloudGames.Identity.Domain.ValueObjects;
+using FiapCloudGames.Identity.Application.Abstractions.Security;
+using FiapCloudGames.Identity.Domain.Users;
 
 namespace FiapCloudGames.Identity.Infrastructure.Security;
 

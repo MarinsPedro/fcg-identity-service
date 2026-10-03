@@ -1,7 +1,7 @@
 using System.Reflection;
 using System.Xml.Linq;
-using FiapCloudGames.Identity.Domain.Entities;
-using FiapCloudGames.Identity.Presentation;
+using FiapCloudGames.Identity.Domain.Users;
+using FiapCloudGames.Identity.Presentation.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FiapCloudGames.Identity.ArchitectureTests;
@@ -17,6 +17,46 @@ public sealed class ArchitectureRulesTests
         AssertProjectReferences("Presentation", "Application");
         AssertProjectReferences("Api", "Infrastructure", "Presentation");
         AssertProjectReferences("Migrations", "Infrastructure");
+    }
+
+    [Fact]
+    public void UnitTests_ReferenceOnlyDomainAndApplication()
+    {
+        var root = FindRepositoryRoot();
+        var projectPath = Path.Combine(
+            root,
+            "tests",
+            "FiapCloudGames.Identity.UnitTests",
+            "FiapCloudGames.Identity.UnitTests.csproj");
+        var project = XDocument.Load(projectPath);
+        var projectReferences = project
+            .Descendants("ProjectReference")
+            .Select(element => Path.GetFileNameWithoutExtension(
+                (string?)element.Attribute("Include")))
+            .OfType<string>()
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+        var packageReferences = project
+            .Descendants("PackageReference")
+            .Select(element => (string?)element.Attribute("Include") ?? string.Empty)
+            .ToArray();
+
+        Assert.Equal(
+            [
+                "FiapCloudGames.Identity.Application",
+                "FiapCloudGames.Identity.Domain"
+            ],
+            projectReferences);
+        Assert.DoesNotContain(
+            packageReferences,
+            package => package.Contains(
+                "EntityFrameworkCore",
+                StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(
+            packageReferences,
+            package => package.Contains(
+                "Mvc.Testing",
+                StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]

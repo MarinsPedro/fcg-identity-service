@@ -1,7 +1,5 @@
-using FiapCloudGames.Identity.Application.Abstractions;
-using FiapCloudGames.Identity.Domain.Entities;
-using FiapCloudGames.Identity.Domain.Enums;
-using FiapCloudGames.Identity.Domain.ValueObjects;
+using FiapCloudGames.Identity.Application.Abstractions.Security;
+using FiapCloudGames.Identity.Domain.Users;
 using FiapCloudGames.Identity.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;

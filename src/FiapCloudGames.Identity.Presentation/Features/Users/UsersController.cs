@@ -1,9 +1,8 @@
-using FiapCloudGames.Identity.Application.Features.Users.CreateUser;
-using FiapCloudGames.Identity.Application.Features.Users.DeactivateUser;
-using FiapCloudGames.Identity.Application.Features.Users.GetUser;
-using FiapCloudGames.Identity.Application.Features.Users.UpdateUser;
-using FiapCloudGames.Identity.Presentation.Features.Users.CreateUser;
-using FiapCloudGames.Identity.Presentation.Features.Users.UpdateUser;
+using FiapCloudGames.Identity.Application.Features.Users.Create;
+using FiapCloudGames.Identity.Application.Features.Users.Deactivate;
+using FiapCloudGames.Identity.Application.Features.Users.Get;
+using FiapCloudGames.Identity.Application.Features.Users.Update;
+using FiapCloudGames.Identity.Presentation.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -14,6 +13,8 @@ namespace FiapCloudGames.Identity.Presentation.Features.Users;
 [Route("internal/v1/users")]
 public sealed class UsersController : ControllerBase
 {
+    private const string GetByIdRoute = "Identity.Users.GetById";
+
     [Authorize(Policy = IdentityPolicies.UsersCreate)]
     [HttpPost]
     [ProducesResponseType<UserResponse>(StatusCodes.Status201Created)]
@@ -26,11 +27,14 @@ public sealed class UsersController : ControllerBase
             request.ToInput(),
             cancellationToken);
         var response = result.ToResponse();
-        return Created($"/internal/v1/users/{response.Id}", response);
+        return CreatedAtRoute(
+            GetByIdRoute,
+            new { id = response.Id },
+            response);
     }
 
     [Authorize(Policy = IdentityPolicies.UsersRead)]
-    [HttpGet("{id:guid}")]
+    [HttpGet("{id:guid}", Name = GetByIdRoute)]
     [ProducesResponseType<UserResponse>(StatusCodes.Status200OK)]
     public async Task<ActionResult<UserResponse>> GetAsync(
         Guid id,

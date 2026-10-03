@@ -1,5 +1,6 @@
 using FiapCloudGames.BuildingBlocks.Exceptions;
-using FiapCloudGames.Identity.Application.Abstractions;
+using FiapCloudGames.Identity.Application.Abstractions.Security;
+using FiapCloudGames.Identity.Application.Features.Authentication.Common;
 
 namespace FiapCloudGames.Identity.Application.Features.Authentication.ClientCredentials;
 

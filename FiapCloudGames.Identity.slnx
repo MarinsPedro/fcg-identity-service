@@ -10,7 +10,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/FiapCloudGames.Identity.ArchitectureTests/FiapCloudGames.Identity.ArchitectureTests.csproj" />
     <Project Path="tests/FiapCloudGames.Identity.IntegrationTests/FiapCloudGames.Identity.IntegrationTests.csproj" />
-    <Project Path="tests/FiapCloudGames.Identity.MigrationsTests/FiapCloudGames.Identity.MigrationsTests.csproj" />
+    <Project Path="tests/FiapCloudGames.Identity.Database.IntegrationTests/FiapCloudGames.Identity.Database.IntegrationTests.csproj" />
     <Project Path="tests/FiapCloudGames.Identity.UnitTests/FiapCloudGames.Identity.UnitTests.csproj" />
   </Folder>
 </Solution>

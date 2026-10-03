@@ -1,8 +1,9 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using FiapCloudGames.BuildingBlocks.Authentication;
-using FiapCloudGames.Identity.Application.Abstractions;
-using FiapCloudGames.Identity.Domain.Entities;
+using FiapCloudGames.Identity.Application.Abstractions.Security;
+using FiapCloudGames.Identity.Domain.ServiceClients;
+using FiapCloudGames.Identity.Domain.Users;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 

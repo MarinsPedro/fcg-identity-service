@@ -1,9 +1,11 @@
 using FiapCloudGames.BuildingBlocks.Exceptions;
-using FiapCloudGames.Identity.Application.Abstractions;
+using FiapCloudGames.Identity.Application.Abstractions.Security;
 using FiapCloudGames.Identity.Application.Abstractions.Persistence;
+using FiapCloudGames.Identity.Application.Features.Authentication.Common;
 using FiapCloudGames.Identity.Application.Features.Users;
-using FiapCloudGames.Identity.Domain.Entities;
-using FiapCloudGames.Identity.Domain.Repositories;
+using FiapCloudGames.Identity.Domain.ServiceClients;
+using FiapCloudGames.Identity.Domain.Sessions;
+using FiapCloudGames.Identity.Domain.Users;
 
 namespace FiapCloudGames.Identity.Application.Features.Authentication.Refresh;
 
