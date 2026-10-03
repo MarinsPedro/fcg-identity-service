@@ -53,9 +53,12 @@ tests/
 docs/
   architecture.md
   configuration.md
+  endpoints.md
 ```
 
 As regras e exemplos da estrutura estão em [docs/architecture.md](docs/architecture.md).
+O uso, os contratos e a ordem recomendada dos endpoints estão em
+[docs/endpoints.md](docs/endpoints.md).
 
 ## Pré-requisitos
 
