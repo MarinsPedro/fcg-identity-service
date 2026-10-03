@@ -65,6 +65,8 @@ O uso, os contratos e a ordem recomendada dos endpoints estão em
 [docs/endpoints.md](docs/endpoints.md).
 A estratégia e as fronteiras das suítes de teste estão em
 [docs/testing.md](docs/testing.md).
+Os fluxos completos de autenticação entre BFF, APIs e serviços internos estão
+em [docs/service-authentication-flows.md](docs/service-authentication-flows.md).
 
 ## Pré-requisitos
 
