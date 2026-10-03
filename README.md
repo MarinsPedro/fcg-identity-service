@@ -4,11 +4,6 @@ Serviço responsável por identidades, autenticação e emissão de tokens da pl
 
 Este repositório é independente do monólito. Ele possui banco, migrations, pipeline e ciclo de entrega próprios.
 
-As decisões que atravessam serviços — módulos, fluxo completo de autenticação,
-comunicação, infraestrutura e roteiro de migração — ficam na
-[documentação central da plataforma](https://github.com/MarinsPedro/fcg-microservices-docs).
-Este repositório documenta somente o funcionamento e a operação do Identity.
-
 ## Responsabilidades
 
 - cadastrar, consultar, atualizar e desativar usuários;
@@ -61,8 +56,6 @@ docs/
 ```
 
 As regras e exemplos da estrutura estão em [docs/architecture.md](docs/architecture.md).
-O fluxo entre as pontas e os demais serviços está na
-[arquitetura de autenticação da plataforma](https://github.com/MarinsPedro/fcg-microservices-docs/blob/main/architecture/authentication-authorization.md).
 
 ## Pré-requisitos
 
