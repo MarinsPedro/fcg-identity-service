@@ -32,6 +32,30 @@ public static class DependencyInjection
                     .RequireAuthenticatedUser()
                     .RequireServiceToken()
                     .RequireClaim(FiapClaimTypes.Scope, "identity.users.write"));
+            options.AddPolicy(
+                IdentityPolicies.ClientsCreate,
+                policy => policy
+                    .RequireAuthenticatedUser()
+                    .RequireServiceToken()
+                    .RequireClaim(FiapClaimTypes.Scope, "identity.clients.create"));
+            options.AddPolicy(
+                IdentityPolicies.ClientsRead,
+                policy => policy
+                    .RequireAuthenticatedUser()
+                    .RequireServiceToken()
+                    .RequireClaim(FiapClaimTypes.Scope, "identity.clients.read"));
+            options.AddPolicy(
+                IdentityPolicies.ClientsWrite,
+                policy => policy
+                    .RequireAuthenticatedUser()
+                    .RequireServiceToken()
+                    .RequireClaim(FiapClaimTypes.Scope, "identity.clients.write"));
+            options.AddPolicy(
+                IdentityPolicies.AuditRead,
+                policy => policy
+                    .RequireAuthenticatedUser()
+                    .RequireServiceToken()
+                    .RequireClaim(FiapClaimTypes.Scope, "identity.audit.read"));
         });
 
         return services;

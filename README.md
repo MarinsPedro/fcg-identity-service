@@ -9,10 +9,13 @@ Este repositório é independente do monólito. Ele possui banco, migrations, pi
 - cadastrar, consultar, atualizar e desativar usuários;
 - autenticar usuários por e-mail e senha;
 - autenticar aplicações por `client_id` e `client_secret`;
+- cadastrar, consultar, reconfigurar, rotacionar e desativar service clients;
 - emitir access tokens JWT dos tipos `user` e `service`;
 - emitir e rotacionar refresh tokens de usuário;
 - publicar a chave pública de assinatura em JWKS;
-- expor metadados de descoberta para os consumidores dos tokens.
+- expor metadados de descoberta para os consumidores dos tokens;
+- registrar eventos persistentes das operações administrativas de clients;
+- expor sinais separados de liveness e readiness.
 
 O Identity **não** decide se o usuário pode comprar um jogo, visualizar um pedido ou executar outra regra de negócio. Essa autorização pertence à ponta (BFF/API Gateway) e, quando necessário, ao serviço que possui o recurso.
 
@@ -112,7 +115,7 @@ dotnet run --project src/FiapCloudGames.Identity.Api
 ```
 
 Com os perfis `Development`, o migrador cria de forma idempotente um
-administrador local e a API cria um client técnico para testes:
+administrador local e o único client técnico inicial, `web-bff`:
 
 | Tipo | Identificador | Segredo local |
 |---|---|---|
@@ -198,6 +201,14 @@ docker build `
 | `GET` | `/internal/users/{id}` | service + `identity.users.read` | consulta usuário |
 | `PUT` | `/internal/users/{id}` | service + `identity.users.write` | altera usuário |
 | `DELETE` | `/internal/users/{id}` | service + `identity.users.write` | desativa usuário |
+| `POST` | `/internal/clients` | service + `identity.clients.create` | cria client e exibe o segredo uma vez |
+| `GET` | `/internal/clients/{clientId}` | service + `identity.clients.read` | consulta client sem expor segredo/hash |
+| `PUT` | `/internal/clients/{clientId}/permissions` | service + `identity.clients.write` | substitui audiences e scopes |
+| `POST` | `/internal/clients/{clientId}/rotate-secret` | service + `identity.clients.write` | rotaciona e exibe o novo segredo uma vez |
+| `DELETE` | `/internal/clients/{clientId}` | service + `identity.clients.write` | desativa client |
+| `GET` | `/internal/audit-events` | service + `identity.audit.read` | consulta auditoria administrativa |
+| `GET` | `/health/live` | anônimo | confirma que o processo está vivo |
+| `GET` | `/health/ready` | anônimo | confirma que a API e o banco estão prontos |
 
 Todos os endpoints são autenticados por padrão. Somente os endpoints públicos marcados explicitamente aceitam chamadas anônimas.
 
@@ -216,6 +227,7 @@ dotnet format FiapCloudGames.Identity.slnx --verify-no-changes --no-restore
 - armazene segredos e a chave privada em secret manager/Kubernetes Secret, nunca em Git;
 - entregue às APIs apenas a chave pública/JWKS;
 - faça rotação dos segredos e da chave de assinatura;
+- capture o segredo retornado na criação/rotação: ele não pode ser consultado depois;
 - mantenha access tokens curtos e cacheie tokens de serviço até próximo do vencimento;
 - não registre senhas, client secrets, refresh tokens ou JWTs em logs;
 - revogue imediatamente qualquer token pessoal do GitHub que tenha sido exposto.

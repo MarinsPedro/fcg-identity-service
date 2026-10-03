@@ -30,6 +30,8 @@ public sealed class TokenController : ControllerBase
                 audience,
                 scope),
             cancellationToken);
+        Response.Headers.CacheControl = "no-store";
+        Response.Headers.Pragma = "no-cache";
         return Ok(result.ToResponse());
     }
 }

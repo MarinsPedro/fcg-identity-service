@@ -3,6 +3,12 @@ using FiapCloudGames.Identity.Application.Features.Authentication.ClientCredenti
 using FiapCloudGames.Identity.Application.Features.Authentication.Login;
 using FiapCloudGames.Identity.Application.Features.Authentication.Refresh;
 using FiapCloudGames.Identity.Application.Features.Authentication.Revoke;
+using FiapCloudGames.Identity.Application.Features.Audit.GetSecurityAuditEvents;
+using FiapCloudGames.Identity.Application.Features.Clients.CreateClient;
+using FiapCloudGames.Identity.Application.Features.Clients.DeactivateClient;
+using FiapCloudGames.Identity.Application.Features.Clients.GetClient;
+using FiapCloudGames.Identity.Application.Features.Clients.RotateSecret;
+using FiapCloudGames.Identity.Application.Features.Clients.UpdatePermissions;
 using FiapCloudGames.Identity.Application.Features.Users.CreateUser;
 using FiapCloudGames.Identity.Application.Features.Users.DeactivateUser;
 using FiapCloudGames.Identity.Application.Features.Users.GetUser;
@@ -24,6 +30,12 @@ public static class DependencyInjection
         services.AddScoped<GetUserService>();
         services.AddScoped<UpdateUserService>();
         services.AddScoped<DeactivateUserService>();
+        services.AddScoped<CreateServiceClientService>();
+        services.AddScoped<GetServiceClientService>();
+        services.AddScoped<UpdateServiceClientPermissionsService>();
+        services.AddScoped<RotateServiceClientSecretService>();
+        services.AddScoped<DeactivateServiceClientService>();
+        services.AddScoped<GetSecurityAuditEventsService>();
         return services;
     }
 }

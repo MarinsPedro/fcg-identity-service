@@ -86,27 +86,26 @@ Jwt__RefreshTokenLifetime=7.00:00:00
 
 Cada rotação deve usar um novo `KeyId`. Durante uma rotação sem interrupção, a publicação simultânea da chave anterior e da nova será uma evolução necessária; a primeira versão publica a chave ativa.
 
-## Aplicações clientes iniciais
+## Client inicial e provisionamento de produção
 
-Os clientes iniciais são carregados pela seção `BootstrapClients` somente para preparar ambientes novos. Exemplo em variáveis de ambiente:
+O projeto de migrations provisiona somente o `web-bff`. A API não cria clients
+durante o startup. Em um banco novo, injete o segredo antes de executar o
+migrador:
 
 ```text
-Identity__BootstrapClients__0__ClientId=fcg-bff
-Identity__BootstrapClients__0__Secret=um-segredo-forte
-Identity__BootstrapClients__0__DisplayName=FCG BFF
-Identity__BootstrapClients__0__CanIssueUserTokens=true
-Identity__BootstrapClients__0__AllowedAudiences__0=fcg-bff
-Identity__BootstrapClients__0__AllowedAudiences__1=identity-api
-Identity__BootstrapClients__0__AllowedScopes__0=store.access
-Identity__BootstrapClients__0__AllowedScopes__1=identity.users.read
-
-Identity__BootstrapClients__1__ClientId=orders-api
-Identity__BootstrapClients__1__Secret=outro-segredo-forte
-Identity__BootstrapClients__1__DisplayName=Orders API
-Identity__BootstrapClients__1__CanIssueUserTokens=false
-Identity__BootstrapClients__1__AllowedAudiences__0=payments-api
-Identity__BootstrapClients__1__AllowedScopes__0=payments.create
+InitialServiceClient__Secret=um-segredo-forte-e-exclusivo
 ```
+
+O valor literal `CHANGE_ME` é rejeitado. O segredo é usado apenas como entrada,
+armazenado como hash PBKDF2 e nunca gravado em auditoria ou devolvido por uma
+consulta. Depois que o `web-bff` existe, novas execuções do migrador são
+idempotentes e não exigem mais essa variável; removê-la do Job reduz a exposição
+do segredo.
+
+O `web-bff` inicial recebe audience `web-bff` e `identity-api`, permissão para
+emitir tokens de usuário e os scopes administrativos necessários para cadastrar
+usuários e gerenciar os demais clients. O migrador rejeita a tentativa de usar
+essa seed para outro `client_id`.
 
 Regras:
 
@@ -114,15 +113,19 @@ Regras:
 - o segredo nunca é compartilhado entre clientes;
 - `CanIssueUserTokens=true` fica restrito às pontas autorizadas, como BFF e Gateway;
 - audiência e escopos seguem privilégio mínimo;
-- o valor literal `CHANGE_ME` é rejeitado;
 - os segredos são persistidos somente como hash PBKDF2.
 
 Cada audience e scope é persistido como uma associação individual em
 `service_client_audiences` e `service_client_scopes`. As listas da configuração
-são usadas somente como entrada do bootstrap; não são armazenadas em uma coluna
+do client inicial são usadas somente como entrada da seed; não são armazenadas em uma coluna
 concatenada.
 
-Após o bootstrap, remova os segredos da configuração do processo. A administração e rotação de clientes por uma API administrativa auditada pode ser adicionada em uma fase posterior.
+Depois do provisionamento, crie os clients de APIs e workers por
+`POST /internal/clients`. O Identity gera o segredo com aleatoriedade
+criptográfica e o mostra uma única vez. Use
+`POST /internal/clients/{clientId}/rotate-secret` para rotação. A rotação
+invalida imediatamente o segredo anterior; distribua o novo segredo de forma
+coordenada pelo secret manager.
 
 Em `Development`, a API possui o seguinte client exclusivamente para testes:
 
@@ -133,8 +136,20 @@ audiences=web-bff identity-api
 scopes=store.access identity.users.create identity.users.read identity.users.write
 ```
 
-O bootstrap não sobrescreve um client existente. Portanto, alterar o segredo no
-arquivo não rotaciona uma credencial que já foi persistida.
+A seed não sobrescreve um client existente. Portanto, alterar
+`InitialServiceClient__Secret` não rotaciona uma credencial já persistida.
+
+## Health checks e auditoria
+
+- `/health/live` verifica somente se o processo HTTP está respondendo;
+- `/health/ready` verifica se o PostgreSQL pode ser acessado;
+- `/health` mantém o endpoint agregado fornecido pelos Building Blocks.
+
+As operações de criação, alteração de permissões, rotação e desativação de
+service clients geram registros em `identity.security_audit_events`. O
+provisionamento inicial também é registrado com ator `identity-migrations`.
+Consulte os eventos por `GET /internal/audit-events`, usando o scope
+`identity.audit.read`. Segredos e hashes não fazem parte do evento.
 
 ## Validação nas APIs consumidoras
 

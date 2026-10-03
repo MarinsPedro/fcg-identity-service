@@ -2,6 +2,8 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json.Nodes;
+using FiapCloudGames.Identity.Application.Abstractions;
+using FiapCloudGames.Identity.Domain.Entities;
 using FiapCloudGames.Identity.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -53,6 +55,7 @@ public sealed class DiscoveryTests(IdentityApiFactory factory)
     public async Task FullFlow_IssuesServiceAndUserTokens()
     {
         using var client = factory.CreateClient();
+        await factory.EnsureServiceClientAsync();
         using var tokenResponse = await client.PostAsync(
             "/connect/token",
             new FormUrlEncodedContent(new Dictionary<string, string>
@@ -64,9 +67,14 @@ public sealed class DiscoveryTests(IdentityApiFactory factory)
                 ["scope"] = "identity.users.create"
             }));
         tokenResponse.EnsureSuccessStatusCode();
+        Assert.Contains("no-store", tokenResponse.Headers.CacheControl?.ToString());
+        Assert.Contains("no-cache", tokenResponse.Headers.Pragma.ToString());
         var tokenDocument = await tokenResponse.Content.ReadFromJsonAsync<JsonObject>();
-        var serviceToken = tokenDocument?["accessToken"]?.GetValue<string>();
+        var serviceToken = tokenDocument?["access_token"]?.GetValue<string>();
         Assert.False(string.IsNullOrWhiteSpace(serviceToken));
+        Assert.Equal("Bearer", tokenDocument?["token_type"]?.GetValue<string>());
+        Assert.True(tokenDocument?["expires_in"]?.GetValue<int>() > 0);
+        Assert.Null(tokenDocument?["accessToken"]);
 
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", serviceToken);
@@ -117,6 +125,18 @@ public sealed class DiscoveryTests(IdentityApiFactory factory)
         Assert.Equal(HttpStatusCode.Unauthorized, refreshResponse.StatusCode);
     }
 
+    [Fact]
+    public async Task HealthEndpoints_ReportLiveAndReady()
+    {
+        using var client = factory.CreateClient();
+
+        using var live = await client.GetAsync("/health/live");
+        using var ready = await client.GetAsync("/health/ready");
+
+        Assert.Equal(HttpStatusCode.OK, live.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, ready.StatusCode);
+    }
+
     private sealed record JwksDocument(JwksKey[] Keys);
     private sealed record JwksKey(string Kty, string N);
 }
@@ -142,14 +162,7 @@ public sealed class IdentityApiFactory : WebApplicationFactory<Program>
                 ["Jwt:Issuer"] = "integration-issuer",
                 ["Jwt:PrivateKeyPath"] = null,
                 ["Jwt:AllowEphemeralDevelopmentKey"] = "true",
-                ["Identity:BootstrapClients:0:ClientId"] = "web-bff",
-                ["Identity:BootstrapClients:0:DisplayName"] = "Web BFF",
-                ["Identity:BootstrapClients:0:Secret"] = "IntegrationSecret1!",
-                ["Identity:BootstrapClients:0:CanIssueUserTokens"] = "true",
-                ["Identity:BootstrapClients:0:AllowedAudiences:0"] = "web-bff",
-                ["Identity:BootstrapClients:0:AllowedAudiences:1"] = "identity-api",
-                ["Identity:BootstrapClients:0:AllowedScopes:0"] = "store.access",
-                ["Identity:BootstrapClients:0:AllowedScopes:1"] = "identity.users.create"
+                ["Logging:LogLevel:Default"] = "Warning"
             });
         });
         builder.ConfigureServices(services =>
@@ -159,5 +172,37 @@ public sealed class IdentityApiFactory : WebApplicationFactory<Program>
             services.AddDbContext<IdentityDbContext>(options =>
                 options.UseInMemoryDatabase(databaseName));
         });
+    }
+
+    public async Task EnsureServiceClientAsync()
+    {
+        await using var scope = Services.CreateAsyncScope();
+        var context = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
+        if (await context.ServiceClients.AnyAsync(
+            client => client.ClientId == "web-bff"))
+        {
+            return;
+        }
+
+        var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
+        var client = ServiceClient.Create(
+            "web-bff",
+            "Web BFF",
+            passwordHasher.HashSecret("IntegrationSecret1!"),
+            true,
+            ["web-bff", "identity-api"],
+            [
+                "store.access",
+                "identity.users.create",
+                "identity.users.read",
+                "identity.users.write",
+                "identity.clients.create",
+                "identity.clients.read",
+                "identity.clients.write",
+                "identity.audit.read"
+            ],
+            DateTimeOffset.UtcNow);
+        await context.ServiceClients.AddAsync(client);
+        await context.SaveChangesAsync();
     }
 }

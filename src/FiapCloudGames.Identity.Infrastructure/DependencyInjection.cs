@@ -5,7 +5,7 @@ using FiapCloudGames.Identity.Application.Abstractions.Persistence;
 using FiapCloudGames.Identity.Application.Abstractions.Security;
 using FiapCloudGames.Identity.Domain.Repositories;
 using FiapCloudGames.Identity.Infrastructure.Authentication;
-using FiapCloudGames.Identity.Infrastructure.Bootstrap;
+using FiapCloudGames.Identity.Infrastructure.Health;
 using FiapCloudGames.Identity.Infrastructure.Persistence;
 using FiapCloudGames.Identity.Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -43,9 +43,6 @@ public static class DependencyInjection
                     options.RefreshTokenLifetime > TimeSpan.Zero,
                 "Os tempos de vida dos tokens devem ser maiores que zero.")
             .ValidateOnStart();
-        services.Configure<IdentityBootstrapOptions>(
-            configuration.GetSection(IdentityBootstrapOptions.SectionName));
-
         services.AddDbContext<IdentityDbContext>(options =>
             options.UseNpgsql(connectionString));
         services.AddScoped<IIdentityUnitOfWork>(provider =>
@@ -53,14 +50,19 @@ public static class DependencyInjection
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IServiceClientRepository, ServiceClientRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<ISecurityAuditRepository, SecurityAuditRepository>();
 
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
+        services.AddSingleton<IClientSecretGenerator, ClientSecretGenerator>();
         services.AddSingleton<IRefreshTokenProtector, RefreshTokenProtector>();
         services.AddSingleton<RsaSigningKeyProvider>();
         services.AddSingleton<ITokenDiscoveryProvider>(provider =>
             provider.GetRequiredService<RsaSigningKeyProvider>());
         services.AddSingleton<ITokenIssuer, JwtTokenIssuer>();
-        services.AddHostedService<ClientBootstrapHostedService>();
+        services.AddHealthChecks()
+            .AddCheck<IdentityDatabaseHealthCheck>(
+                "identity-database",
+                tags: ["ready"]);
 
         AddAuthentication(services);
         return services;

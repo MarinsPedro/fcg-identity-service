@@ -20,9 +20,12 @@ try
         MigrationDbContextOptions.Configure(options, connectionString));
     builder.Services.Configure<AdminSeedOptions>(
         builder.Configuration.GetSection(AdminSeedOptions.SectionName));
+    builder.Services.Configure<InitialServiceClientOptions>(
+        builder.Configuration.GetSection(InitialServiceClientOptions.SectionName));
     builder.Services.AddSingleton(TimeProvider.System);
     builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
     builder.Services.AddScoped<AdminSeeder>();
+    builder.Services.AddScoped<InitialServiceClientSeeder>();
     builder.Services.AddScoped<MigrationRunner>();
 
     using var host = builder.Build();

@@ -13,11 +13,19 @@ e logout.
 | `GET /internal/users/{id}` | aplicação interna autorizada | token `service` + `identity.users.read` | consultar usuário |
 | `PUT /internal/users/{id}` | aplicação interna autorizada | token `service` + `identity.users.write` | alterar nome e e-mail |
 | `DELETE /internal/users/{id}` | aplicação interna autorizada | token `service` + `identity.users.write` | desativar usuário |
+| `POST /internal/clients` | `web-bff` ou client administrador | token `service` + `identity.clients.create` | criar client e obter o segredo uma vez |
+| `GET /internal/clients/{clientId}` | client administrador | token `service` + `identity.clients.read` | consultar dados públicos do client |
+| `PUT /internal/clients/{clientId}/permissions` | client administrador | token `service` + `identity.clients.write` | substituir audiences e scopes |
+| `POST /internal/clients/{clientId}/rotate-secret` | client administrador | token `service` + `identity.clients.write` | rotacionar o segredo |
+| `DELETE /internal/clients/{clientId}` | client administrador | token `service` + `identity.clients.write` | desativar client |
+| `GET /internal/audit-events` | client auditor | token `service` + `identity.audit.read` | consultar eventos administrativos |
 | `POST /api/auth/login` | BFF ou Gateway | credenciais da aplicação e do usuário | iniciar sessão do usuário |
 | `POST /api/auth/refresh` | BFF ou Gateway | credenciais da aplicação + refresh token | renovar a sessão |
 | `POST /api/auth/revoke` | BFF ou Gateway | credenciais da aplicação + refresh token | encerrar a sessão |
 | `GET /.well-known/openid-configuration` | bibliotecas e infraestrutura | nenhuma | descobrir os metadados do emissor |
 | `GET /.well-known/jwks.json` | APIs que validam JWT | nenhuma | obter a chave pública de assinatura |
+| `GET /health/live` | infraestrutura | nenhuma | verificar se o processo está vivo |
+| `GET /health/ready` | infraestrutura | nenhuma | verificar se API e banco estão prontos |
 
 Os endpoints de autenticação e discovery possuem `AllowAnonymous`. Isso quer
 dizer que não recebem um JWT no header `Authorization`; eles validam as
@@ -30,7 +38,7 @@ exige Bearer nesses endpoints.
 Antes de testar os fluxos:
 
 1. aplique as migrations do Identity;
-2. configure ao menos um client de bootstrap;
+2. forneça `InitialServiceClient__Secret` na primeira execução do migrador;
 3. inicie o Identity;
 4. confirme que o client possui as audiences e os scopes necessários.
 
@@ -61,6 +69,10 @@ AllowedScopes:
   - identity.users.create
   - identity.users.read
   - identity.users.write
+  - identity.clients.create
+  - identity.clients.read
+  - identity.clients.write
+  - identity.audit.read
 ```
 
 `web-bff` é apenas o identificador usado no exemplo. Cada BFF, Gateway, API e
@@ -105,7 +117,7 @@ audience=identity-api
 scope=identity.users.create identity.users.read identity.users.write
 ```
 
-Copie o `accessToken` da resposta. O Identity só emite os scopes e a audience
+Copie o `access_token` da resposta. O Identity só emite os scopes e a audience
 que estiverem permitidos para esse client.
 
 ### 2. Autorizar os endpoints internos
@@ -152,12 +164,15 @@ Resposta `200 OK`:
 
 ```json
 {
-  "accessToken": "eyJ...",
-  "tokenType": "Bearer",
-  "expiresIn": 300,
+  "access_token": "eyJ...",
+  "token_type": "Bearer",
+  "expires_in": 300,
   "scope": "identity.users.create"
 }
 ```
+
+A resposta também envia `Cache-Control: no-store` e `Pragma: no-cache`, para
+impedir que intermediários armazenem o token.
 
 Regras importantes:
 
@@ -169,6 +184,64 @@ Regras importantes:
   solicitar outro a cada requisição.
 
 Para acessar `/internal/users`, a audience obrigatória é `identity-api`.
+
+### Gerenciamento de service clients
+
+Esses endpoints usam audience `identity-api`. Eles devem ser chamados por um
+client administrativo com o scope indicado, nunca por navegador ou aplicativo
+externo.
+
+#### `POST /internal/clients`
+
+Cria as credenciais de uma API, worker, BFF ou Gateway. O segredo é gerado pelo
+Identity e retornado somente nesta resposta:
+
+```json
+{
+  "clientId": "orders-api",
+  "displayName": "Orders API",
+  "canIssueUserTokens": false,
+  "allowedAudiences": ["payments-api"],
+  "allowedScopes": ["payments.write"]
+}
+```
+
+A resposta `201 Created` contém `client` e `clientSecret`. Copie imediatamente
+o segredo para o secret manager. O endpoint de consulta nunca o mostrará.
+
+#### `GET /internal/clients/{clientId}`
+
+Retorna nome, estado, audiences e scopes. Não retorna `client_secret` nem o hash
+persistido. Exige `identity.clients.read`.
+
+#### `PUT /internal/clients/{clientId}/permissions`
+
+Substitui integralmente as audiences e scopes atuais. Valores omitidos deixam
+de ser permitidos, portanto envie o conjunto completo desejado. Exige
+`identity.clients.write`.
+
+#### `POST /internal/clients/{clientId}/rotate-secret`
+
+Gera um novo segredo, invalida o anterior imediatamente e devolve o novo valor
+uma única vez. Exige `identity.clients.write`. Faça a distribuição pelo secret
+manager antes de reiniciar o consumidor.
+
+#### `DELETE /internal/clients/{clientId}`
+
+Desativa logicamente o client, bloqueando novas emissões de token. O chamador
+não pode desativar a própria credencial. Exige `identity.clients.write`.
+
+### `GET /internal/audit-events`
+
+Retorna os eventos mais recentes de provisionamento e gerenciamento de service
+clients. O parâmetro `take` aceita de 1 a 200 e usa 100 quando omitido.
+
+```http
+GET /internal/audit-events?take=50
+Authorization: Bearer <token-service>
+```
+
+Exige `identity.audit.read`. Os eventos não contêm segredo, hash ou JWT.
 
 ### `POST /internal/users`
 

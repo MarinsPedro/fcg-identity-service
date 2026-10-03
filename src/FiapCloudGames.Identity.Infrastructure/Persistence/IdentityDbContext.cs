@@ -15,6 +15,7 @@ public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> option
     public DbSet<ServiceClientAudience> ServiceClientAudiences => Set<ServiceClientAudience>();
     public DbSet<ServiceClientScope> ServiceClientScopes => Set<ServiceClientScope>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<SecurityAuditEvent> SecurityAuditEvents => Set<SecurityAuditEvent>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -104,6 +105,29 @@ public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> option
                 .OnDelete(DeleteBehavior.Cascade);
             builder.HasOne<ServiceClient>().WithMany().HasForeignKey(token => token.ClientId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<SecurityAuditEvent>(builder =>
+        {
+            builder.ToTable("security_audit_events");
+            builder.HasKey(auditEvent => auditEvent.Id);
+            builder.Property(auditEvent => auditEvent.Id).HasColumnName("id").ValueGeneratedNever();
+            builder.Property(auditEvent => auditEvent.EventType).HasColumnName("event_type")
+                .HasMaxLength(100).IsRequired();
+            builder.Property(auditEvent => auditEvent.ActorClientId).HasColumnName("actor_client_id")
+                .HasMaxLength(100).IsRequired();
+            builder.Property(auditEvent => auditEvent.SubjectType).HasColumnName("subject_type")
+                .HasMaxLength(50).IsRequired();
+            builder.Property(auditEvent => auditEvent.SubjectId).HasColumnName("subject_id")
+                .HasMaxLength(254).IsRequired();
+            builder.Property(auditEvent => auditEvent.OccurredAtUtc).HasColumnName("occurred_at_utc")
+                .IsRequired();
+            builder.HasIndex(auditEvent => auditEvent.OccurredAtUtc);
+            builder.HasIndex(auditEvent => new
+            {
+                auditEvent.SubjectType,
+                auditEvent.SubjectId
+            });
         });
     }
 }

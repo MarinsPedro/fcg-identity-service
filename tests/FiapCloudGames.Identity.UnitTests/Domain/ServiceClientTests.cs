@@ -52,4 +52,47 @@ public sealed class ServiceClientTests
         Assert.False(client.RemoveAudience("unknown-api"));
         Assert.False(client.RevokeScope("unknown.scope"));
     }
+
+    [Fact]
+    public void Client_ReplacesPermissionsWithoutDuplicates()
+    {
+        var client = ServiceClient.Create(
+            "orders-api",
+            "Orders API",
+            "hash",
+            false,
+            ["identity-api", "payments-api"],
+            ["payments.read", "payments.write"],
+            DateTimeOffset.UtcNow);
+
+        client.ReplacePermissions(
+            ["payments-api", "catalog-api", "catalog-api"],
+            ["catalog.read", "catalog.read"]);
+
+        Assert.Equal(
+            ["catalog-api", "payments-api"],
+            client.AllowedAudiences.Select(item => item.Audience).Order());
+        Assert.Equal(
+            ["catalog.read"],
+            client.AllowedScopes.Select(item => item.Scope));
+    }
+
+    [Fact]
+    public void Client_RotatesSecretAndCanBeDeactivated()
+    {
+        var client = ServiceClient.Create(
+            "orders-api",
+            "Orders API",
+            "old-hash",
+            false,
+            ["payments-api"],
+            ["payments.write"],
+            DateTimeOffset.UtcNow);
+
+        client.RotateSecret("new-hash");
+        client.Deactivate();
+
+        Assert.Equal("new-hash", client.SecretHash);
+        Assert.False(client.IsActive);
+    }
 }

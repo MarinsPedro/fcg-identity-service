@@ -90,6 +90,51 @@ public sealed class ServiceClient
         allowedScopes.RemoveAll(current =>
             string.Equals(current.Scope, scope?.Trim(), StringComparison.Ordinal)) > 0;
 
+    public void ReplacePermissions(
+        IEnumerable<string> audiences,
+        IEnumerable<string> scopes)
+    {
+        var normalizedAudiences = NormalizeList(audiences, "audiences");
+        var normalizedScopes = NormalizeList(scopes, "scopes");
+        var requestedAudiences = normalizedAudiences.ToHashSet(StringComparer.Ordinal);
+        var requestedScopes = normalizedScopes.ToHashSet(StringComparer.Ordinal);
+
+        allowedAudiences.RemoveAll(current =>
+            !requestedAudiences.Contains(current.Audience));
+        allowedScopes.RemoveAll(current =>
+            !requestedScopes.Contains(current.Scope));
+        foreach (var audience in normalizedAudiences)
+        {
+            AllowAudience(audience);
+        }
+
+        foreach (var scope in normalizedScopes)
+        {
+            GrantScope(scope);
+        }
+    }
+
+    public void RotateSecret(string secretHash)
+    {
+        if (!IsActive)
+        {
+            throw new DomainRuleViolationException(
+                "Não é possível rotacionar o segredo de um client inativo.");
+        }
+
+        SecretHash = NormalizeRequired(secretHash, 500, "hash do segredo");
+    }
+
+    public void Deactivate()
+    {
+        if (!IsActive)
+        {
+            throw new DomainRuleViolationException("O client já está inativo.");
+        }
+
+        IsActive = false;
+    }
+
     private void AddAudiences(IEnumerable<string> audiences)
     {
         foreach (var audience in NormalizeList(audiences, "audiences"))

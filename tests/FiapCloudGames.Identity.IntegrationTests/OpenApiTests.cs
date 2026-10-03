@@ -23,6 +23,9 @@ public sealed class OpenApiTests(IdentityApiFactory factory)
         Assert.True(paths.TryGetProperty("/api/auth/login", out _));
         Assert.True(paths.TryGetProperty("/connect/token", out _));
         Assert.True(paths.TryGetProperty("/internal/users", out _));
+        Assert.True(paths.TryGetProperty("/internal/clients", out _));
+        Assert.True(paths.TryGetProperty("/internal/clients/{clientId}/rotate-secret", out _));
+        Assert.True(paths.TryGetProperty("/internal/audit-events", out _));
         Assert.True(paths.TryGetProperty("/.well-known/jwks.json", out _));
 
         var securitySchemes = document.RootElement

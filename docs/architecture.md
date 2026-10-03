@@ -20,7 +20,7 @@ conhece uma camada interna; o inverso não ocorre.
 |---|---|---|
 | Domain | agregados, entidades, value objects, invariantes e repositories | nenhuma |
 | Application | casos de uso, Inputs, Results e portas técnicas | Domain |
-| Infrastructure | EF Core, repositories, hashing, JWT e bootstrap técnico | Application e Domain |
+| Infrastructure | EF Core, repositories, hashing, JWT e health checks | Application e Domain |
 | Presentation | Controllers, Requests, Responses e mappings HTTP | Application |
 | API | composition root, middleware e pipeline | Infrastructure e Presentation |
 | Migrations | migrations EF Core e atualização explícita do banco | Infrastructure |
@@ -45,11 +45,20 @@ Application/Features/
     GetUser/
     UpdateUser/
     DeactivateUser/
+  Clients/
+    CreateClient/
+    GetClient/
+    UpdatePermissions/
+    RotateSecret/
+    DeactivateClient/
+  Audit/
 
 Presentation/Features/
   Authentication/
   Discovery/
   Users/
+  Clients/
+  Audit/
 ```
 
 Cada caso de uso expõe `ExecuteAsync`, recebe um Input sem semântica HTTP,
@@ -73,6 +82,10 @@ com `client_id`. `ServiceClient` continua sendo a raiz do agregado e controla
 concessão, remoção e verificação dessas coleções. O repository sempre carrega as
 duas coleções ao autenticar um client.
 
+As mutações administrativas do agregado `ServiceClient` persistem um
+`SecurityAuditEvent` na mesma unidade de trabalho. O evento registra tipo,
+client ator, tipo/ID do alvo e instante UTC, mas nunca segredo, hash ou JWT.
+
 Como este é um microserviço com banco próprio, as migrations e o snapshot ficam
 em `FiapCloudGames.Identity.Migrations`. Esse projeto é um executável que aplica
 somente o banco do Identity. Ele depende de Infrastructure; API e Infrastructure
@@ -81,7 +94,9 @@ não dependem dele. A API nunca altera schema durante o startup.
 Em desenvolvimento, execute o migrador antes da API. Em Kubernetes, execute a
 imagem `migrations` como Job antes do rollout. Uma falha encerra com código `1`;
 cancelamento encerra com código `2`, impedindo que o deploy prossiga como se o
-banco estivesse atualizado.
+banco estivesse atualizado. Depois das migrations, o mesmo executável realiza
+as seeds idempotentes do administrador e do único client inicial `web-bff`.
+Outros clients são criados pela API administrativa.
 
 O migrador registra o `IdentityDbContext` e o executor no container de DI, usa
 `ILogger` para logs estruturados e aplica retry limitado para falhas transitórias
