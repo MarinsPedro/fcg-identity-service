@@ -5,6 +5,9 @@ organização vertical por feature e separação entre contratos HTTP e casos de
 uso. O monólito é somente a referência; nenhuma alteração nele é necessária
 para evoluir este repositório.
 
+Este documento trata da implementação do Identity. Decisões compartilhadas
+ficam na [documentação central](https://github.com/MarinsPedro/fcg-microservices-docs).
+
 ## Direção das dependências
 
 ```text

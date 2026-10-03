@@ -90,6 +90,11 @@ Após o bootstrap, remova os segredos da configuração do processo. A administr
 
 ## Validação nas APIs consumidoras
 
+O desenho completo é mantido na
+[documentação central de autenticação](https://github.com/MarinsPedro/fcg-microservices-docs/blob/main/architecture/authentication-authorization.md).
+Do ponto de vista do Identity, os consumidores devem validar os tokens emitidos
+localmente e respeitar os claims do contrato abaixo.
+
 Cada API configura localmente:
 
 - `Authority`: endereço do Identity;
