@@ -72,15 +72,15 @@ em [docs/service-authentication-flows.md](docs/service-authentication-flows.md).
 
 - .NET SDK 10;
 - PostgreSQL;
-- acesso ao pacote privado `FiapCloudGames.BuildingBlocks` versão `0.2.0` no GitHub Packages.
+- acesso ao pacote privado `FiapCloudGames.BuildingBlocks` versão `0.3.0` no GitHub Packages.
 
-O `NuGet.Config` versionado contém somente os endereços dos feeds e referências
-a variáveis de ambiente. Credenciais nunca são gravadas no repositório. Para
-restaurar localmente, defina:
+O `NuGet.Config` referencia as variáveis de ambiente
+`GITHUB_PACKAGES_USERNAME` e `GITHUB_PACKAGES_TOKEN`; os valores reais das
+credenciais não são gravados no repositório. Defina-os antes do restore:
 
 ```powershell
 $env:GITHUB_PACKAGES_USERNAME = "MarinsPedro"
-$env:GITHUB_PACKAGES_TOKEN = "SEU_PAT_CLASSIC"
+$env:GITHUB_PACKAGES_TOKEN = Read-Host "Token do GitHub Packages" -MaskInput
 
 dotnet restore FiapCloudGames.Identity.slnx --configfile NuGet.Config
 ```
@@ -90,12 +90,22 @@ Studio herdar essas variáveis, configure-as no usuário e reinicie o Visual
 Studio. O `appsettings.json` não é usado pelo NuGet, pois o restore ocorre antes
 da aplicação existir.
 
-Depois de um restore executado pelo terminal, remova o token da sessão quando
-ele não for mais necessário:
+Depois do restore pelo terminal, remova o token da sessão quando ele não for
+mais necessário:
 
 ```powershell
 Remove-Item Env:\GITHUB_PACKAGES_TOKEN
 ```
+
+Para testar alterações locais do Building Blocks sem publicar um NuGet,
+mantenha os repositórios como irmãos e use:
+
+```powershell
+dotnet build FiapCloudGames.Identity.slnx -p:UseLocalBuildingBlocks=true
+```
+
+O padrão é `UseLocalBuildingBlocks=false`, portanto CI e produção continuam
+usando a versão publicada definida em `Directory.Packages.props`.
 
 No GitHub, conceda ao repositório do Identity acesso de leitura ao package Building Blocks em **Package settings > Manage Actions access**. O workflow usa o `GITHUB_TOKEN` efêmero; nenhum PAT deve ser cadastrado no YAML.
 

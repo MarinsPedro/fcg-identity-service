@@ -174,7 +174,11 @@ public sealed class ArchitectureRulesTests
             $"FiapCloudGames.Identity.{layer}.csproj");
         var references = XDocument.Load(projectPath)
             .Descendants("ProjectReference")
-            .Select(element => Path.GetFileNameWithoutExtension((string?)element.Attribute("Include")))
+            .Select(element => (string?)element.Attribute("Include"))
+            .Where(include => include?.Contains(
+                "FiapCloudGames.Identity.",
+                StringComparison.Ordinal) == true)
+            .Select(Path.GetFileNameWithoutExtension)
             .Select(name => name?.Split('.').Last())
             .Where(name => name is not null)
             .Order(StringComparer.Ordinal)
