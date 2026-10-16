@@ -9,7 +9,7 @@ namespace FiapCloudGames.Identity.IntegrationTests.Contracts;
 public sealed class ServiceClientManagementContractTests(IdentityApiFactory factory)
     : IClassFixture<IdentityApiFactory>
 {
-    [Fact]
+    [Fact(DisplayName = "Gerenciar service client - deve criar, rotacionar, auditar e desativar o cliente")]
     public async Task ManagementFlow_ShouldCreateRotateAuditAndDeactivateClient()
     {
         using var client = factory.CreateClient();
@@ -24,7 +24,7 @@ public sealed class ServiceClientManagementContractTests(IdentityApiFactory fact
             new AuthenticationHeaderValue("Bearer", administratorToken);
 
         using var createResponse = await client.PostAsJsonAsync(
-            "/internal/v1/service-clients",
+            "/v1/service-clients",
             new
             {
                 clientId = "orders-api",
@@ -40,7 +40,7 @@ public sealed class ServiceClientManagementContractTests(IdentityApiFactory fact
         Assert.Null(createDocument?["client"]?["secretHash"]);
 
         using var getResponse = await client.GetAsync(
-            "/internal/v1/service-clients/orders-api");
+            "/v1/service-clients/orders-api");
         getResponse.EnsureSuccessStatusCode();
         var getDocument = await getResponse.Content.ReadFromJsonAsync<JsonObject>();
         Assert.Equal("orders-api", getDocument?["clientId"]?.GetValue<string>());
@@ -48,7 +48,7 @@ public sealed class ServiceClientManagementContractTests(IdentityApiFactory fact
         Assert.Null(getDocument?["secretHash"]);
 
         using var updateResponse = await client.PutAsJsonAsync(
-            "/internal/v1/service-clients/orders-api/permissions",
+            "/v1/service-clients/orders-api/permissions",
             new
             {
                 allowedAudiences = new[] { "payments-api" },
@@ -57,7 +57,7 @@ public sealed class ServiceClientManagementContractTests(IdentityApiFactory fact
         updateResponse.EnsureSuccessStatusCode();
 
         using var rotateResponse = await client.PostAsync(
-            "/internal/v1/service-clients/orders-api/secret/rotate",
+            "/v1/service-clients/orders-api/secret/rotate",
             content: null);
         rotateResponse.EnsureSuccessStatusCode();
         var rotateDocument = await rotateResponse.Content.ReadFromJsonAsync<JsonObject>();
@@ -85,7 +85,7 @@ public sealed class ServiceClientManagementContractTests(IdentityApiFactory fact
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", administratorToken);
         using var auditResponse = await client.GetAsync(
-            "/internal/v1/audit-events?take=20");
+            "/v1/audit-events?take=20");
         auditResponse.EnsureSuccessStatusCode();
         var auditEvents = await auditResponse.Content.ReadFromJsonAsync<JsonArray>();
         Assert.Contains(
@@ -96,7 +96,7 @@ public sealed class ServiceClientManagementContractTests(IdentityApiFactory fact
             item => item?["eventType"]?.GetValue<string>() == "service_client.secret_rotated");
 
         using var deactivateResponse = await client.DeleteAsync(
-            "/internal/v1/service-clients/orders-api");
+            "/v1/service-clients/orders-api");
         Assert.Equal(HttpStatusCode.NoContent, deactivateResponse.StatusCode);
 
         client.DefaultRequestHeaders.Authorization = null;

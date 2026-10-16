@@ -5,7 +5,7 @@ namespace FiapCloudGames.Identity.Database.IntegrationTests;
 
 public sealed class EfModelConventionTests
 {
-    [Fact]
+    [Fact(DisplayName = "Mapear entidades - deve usar o schema identity e lower_snake_case")]
     public void Entities_ShouldUseIdentitySchemaAndLowerSnakeCase()
     {
         using var context = IdentityDbContextTestFactory.Create();
@@ -32,7 +32,7 @@ public sealed class EfModelConventionTests
         }
     }
 
-    [Fact]
+    [Fact(DisplayName = "Mapear entidades - deve definir chaves primárias e pertencer ao domínio Identity")]
     public void Entities_ShouldHavePrimaryKeysAndBelongToIdentityDomain()
     {
         using var context = IdentityDbContextTestFactory.Create();
@@ -47,7 +47,7 @@ public sealed class EfModelConventionTests
         }
     }
 
-    [Fact]
+    [Fact(DisplayName = "Mapear propriedades decimais - deve definir precisão explicitamente")]
     public void DecimalProperties_ShouldHaveExplicitPrecision()
     {
         using var context = IdentityDbContextTestFactory.Create();

@@ -1,4 +1,5 @@
 using Microsoft.OpenApi;
+using FiapCloudGames.Identity.Presentation;
 
 namespace FiapCloudGames.Identity.Api.Configuration;
 
@@ -18,6 +19,10 @@ internal static class IdentityOpenApiExtensions
                     Description =
                         "Serviço de identidade, autenticação e emissão de tokens."
                 });
+
+            var presentationAssembly = typeof(DependencyInjection).Assembly;
+            var xmlFile = $"{presentationAssembly.GetName().Name}.xml";
+            options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFile));
 
             options.AddSecurityDefinition(
                 "bearer",

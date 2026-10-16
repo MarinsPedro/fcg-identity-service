@@ -14,6 +14,9 @@ internal sealed class InitialServiceClientOptions
     public List<string> AllowedScopes { get; set; } =
     [
         "store.access",
+        "identity.auth.login",
+        "identity.auth.refresh",
+        "identity.auth.revoke",
         "identity.users.create",
         "identity.users.read",
         "identity.users.write",

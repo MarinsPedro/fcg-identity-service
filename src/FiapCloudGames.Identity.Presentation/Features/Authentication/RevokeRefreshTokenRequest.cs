@@ -2,7 +2,8 @@ using System.ComponentModel.DataAnnotations;
 
 namespace FiapCloudGames.Identity.Presentation.Features.Authentication;
 
-public sealed record RevokeRefreshTokenRequest(
-    [Required] string RefreshToken,
-    [Required, StringLength(100)] string ClientId,
-    [Required] string ClientSecret);
+/// <summary>
+/// Representa a solicitação de revogação de uma sessão.
+/// </summary>
+/// <param name="RefreshToken">Refresh token que será revogado.</param>
+public sealed record RevokeRefreshTokenRequest([Required] string RefreshToken);

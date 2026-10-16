@@ -112,10 +112,11 @@ Presentation/
     Auditing/
 ```
 
-`Authentication` contém login, refresh e revoke. `OAuth` contém o endpoint
-padronizado de client credentials. `Discovery` publica os documentos públicos.
-Os Controllers adaptam o protocolo HTTP para os casos de uso e nunca devolvem
-entidades de domínio diretamente.
+`Authentication` contém login, refresh e revoke protegidos por token de serviço.
+`OAuth` contém o endpoint padronizado de client credentials. `Discovery` publica
+documentos anônimos restritos à rede interna, usados no bootstrap da validação
+de JWT. Os Controllers adaptam o protocolo HTTP para os casos de uso e nunca
+devolvem entidades de domínio diretamente.
 
 Requests, Responses e mappings permanecem próximos do Controller do recurso.
 Policies ficam em `Authorization`, evitando dependências circulares entre

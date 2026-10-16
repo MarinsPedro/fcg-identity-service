@@ -9,26 +9,27 @@ namespace FiapCloudGames.Identity.IntegrationTests.Contracts;
 public sealed class AuthenticationContractTests(IdentityApiFactory factory)
     : IClassFixture<IdentityApiFactory>
 {
-    [Fact]
-    public async Task Login_WithInvalidContract_ReturnsValidationProblem()
+    [Fact(DisplayName = "Acessar autenticação sem token de serviço - deve retornar não autorizado")]
+    public async Task AuthenticationEndpoints_WithoutServiceToken_ReturnUnauthorized()
     {
         using var client = factory.CreateClient();
-        using var response = await client.PostAsJsonAsync(
-            "/api/v1/auth/login",
-            new
-            {
-                email = "invalid",
-                password = string.Empty,
-                clientId = string.Empty,
-                clientSecret = string.Empty
-            });
+        using var loginResponse = await client.PostAsJsonAsync(
+            "/v1/auth/login",
+            new { email = "user@example.com", password = "Password1!" });
+        using var refreshResponse = await client.PostAsJsonAsync(
+            "/v1/auth/refresh",
+            new { refreshToken = "refresh-token" });
+        using var revokeResponse = await client.PostAsJsonAsync(
+            "/v1/auth/revoke",
+            new { refreshToken = "refresh-token" });
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+        Assert.Equal(HttpStatusCode.Unauthorized, loginResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, refreshResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, revokeResponse.StatusCode);
     }
 
-    [Fact]
-    public async Task AuthenticationFlow_WithValidCredentials_IssuesAndRevokesTokens()
+    [Fact(DisplayName = "Acessar autenticação sem os escopos necessários - deve retornar proibido")]
+    public async Task AuthenticationEndpoints_WithoutRequiredScopes_ReturnForbidden()
     {
         using var client = factory.CreateClient();
         await factory.EnsureServiceClientAsync();
@@ -43,6 +44,44 @@ public sealed class AuthenticationContractTests(IdentityApiFactory factory)
                 ["scope"] = "identity.users.create"
             }));
         tokenResponse.EnsureSuccessStatusCode();
+        var tokenDocument = await tokenResponse.Content.ReadFromJsonAsync<JsonObject>();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+            "Bearer",
+            tokenDocument?["access_token"]?.GetValue<string>());
+
+        using var loginResponse = await client.PostAsJsonAsync(
+            "/v1/auth/login",
+            new { email = "user@example.com", password = "Password1!" });
+        using var refreshResponse = await client.PostAsJsonAsync(
+            "/v1/auth/refresh",
+            new { refreshToken = "refresh-token" });
+        using var revokeResponse = await client.PostAsJsonAsync(
+            "/v1/auth/revoke",
+            new { refreshToken = "refresh-token" });
+
+        Assert.Equal(HttpStatusCode.Forbidden, loginResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, refreshResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, revokeResponse.StatusCode);
+    }
+
+    [Fact(DisplayName = "Executar fluxo de autenticação - deve emitir e revogar tokens com credenciais válidas")]
+    public async Task AuthenticationFlow_WithValidCredentials_IssuesAndRevokesTokens()
+    {
+        using var client = factory.CreateClient();
+        await factory.EnsureServiceClientAsync();
+        using var tokenResponse = await client.PostAsync(
+            "/oauth2/token",
+            new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["grant_type"] = "client_credentials",
+                ["client_id"] = "web-bff",
+                ["client_secret"] = "IntegrationSecret1!",
+                ["audience"] = "identity-api",
+                ["scope"] =
+                    "identity.users.create identity.auth.login " +
+                    "identity.auth.refresh identity.auth.revoke"
+            }));
+        tokenResponse.EnsureSuccessStatusCode();
         Assert.Contains("no-store", tokenResponse.Headers.CacheControl?.ToString());
         Assert.Contains("no-cache", tokenResponse.Headers.Pragma.ToString());
         var tokenDocument = await tokenResponse.Content.ReadFromJsonAsync<JsonObject>();
@@ -55,7 +94,7 @@ public sealed class AuthenticationContractTests(IdentityApiFactory factory)
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", serviceToken);
         using var createResponse = await client.PostAsJsonAsync(
-            "/internal/v1/users",
+            "/v1/users",
             new
             {
                 name = "Integration User",
@@ -64,15 +103,12 @@ public sealed class AuthenticationContractTests(IdentityApiFactory factory)
             });
         Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
 
-        client.DefaultRequestHeaders.Authorization = null;
         using var loginResponse = await client.PostAsJsonAsync(
-            "/api/v1/auth/login",
+            "/v1/auth/login",
             new
             {
                 email = "integration@example.com",
-                password = "Password1!",
-                clientId = "web-bff",
-                clientSecret = "IntegrationSecret1!"
+                password = "Password1!"
             });
         loginResponse.EnsureSuccessStatusCode();
         var loginDocument = await loginResponse.Content.ReadFromJsonAsync<JsonObject>();
@@ -81,22 +117,18 @@ public sealed class AuthenticationContractTests(IdentityApiFactory factory)
         Assert.False(string.IsNullOrWhiteSpace(refreshToken));
 
         using var revokeResponse = await client.PostAsJsonAsync(
-            "/api/v1/auth/revoke",
+            "/v1/auth/revoke",
             new
             {
-                refreshToken,
-                clientId = "web-bff",
-                clientSecret = "IntegrationSecret1!"
+                refreshToken
             });
         Assert.Equal(HttpStatusCode.NoContent, revokeResponse.StatusCode);
 
         using var refreshResponse = await client.PostAsJsonAsync(
-            "/api/v1/auth/refresh",
+            "/v1/auth/refresh",
             new
             {
-                refreshToken,
-                clientId = "web-bff",
-                clientSecret = "IntegrationSecret1!"
+                refreshToken
             });
         Assert.Equal(HttpStatusCode.Unauthorized, refreshResponse.StatusCode);
     }

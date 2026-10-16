@@ -4,14 +4,14 @@ namespace FiapCloudGames.Identity.UnitTests.Domain.Users;
 
 public sealed class EmailTests
 {
-    [Fact]
+    [Fact(DisplayName = "Criar e-mail - deve normalizar o valor")]
     public void Create_NormalizesEmail()
     {
         var email = Email.Create("  USER@Example.com ");
         Assert.Equal("user@example.com", email.Value);
     }
 
-    [Theory]
+    [Theory(DisplayName = "Criar e-mail - deve rejeitar valor inválido")]
     [InlineData("")]
     [InlineData("invalid")]
     [InlineData("@example.com")]

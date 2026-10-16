@@ -14,12 +14,23 @@ public sealed class RefreshToken
         DateTimeOffset createdAtUtc,
         DateTimeOffset expiresAtUtc)
     {
-        Id = id;
-        UserId = userId;
-        ClientId = clientId;
-        TokenHash = tokenHash;
-        CreatedAtUtc = createdAtUtc;
-        ExpiresAtUtc = expiresAtUtc;
+        Id = id != Guid.Empty
+            ? id
+            : throw new DomainRuleViolationException(
+                "O identificador do refresh token é obrigatório.");
+        UserId = userId != Guid.Empty
+            ? userId
+            : throw new DomainRuleViolationException(
+                "O identificador do usuário é obrigatório.");
+        ClientId = NormalizeRequired(clientId, 100, "client_id");
+        TokenHash = NormalizeRequired(tokenHash, 64, "hash do refresh token");
+        CreatedAtUtc = ValidateUtc(createdAtUtc, "data de criação");
+        ExpiresAtUtc = ValidateUtc(expiresAtUtc, "data de expiração");
+        if (ExpiresAtUtc <= CreatedAtUtc)
+        {
+            throw new DomainRuleViolationException(
+                "A expiração do refresh token deve ser posterior à criação.");
+        }
     }
 
     public Guid Id { get; private set; }
@@ -49,15 +60,42 @@ public sealed class RefreshToken
             throw new DomainRuleViolationException("O refresh token já foi revogado.");
         }
 
-        RevokedAtUtc = revokedAtUtc;
-        ReplacedByTokenId = replacementId;
+        ReplacedByTokenId = replacementId != Guid.Empty
+            ? replacementId
+            : throw new DomainRuleViolationException(
+                "O identificador do refresh token substituto é obrigatório.");
+        RevokedAtUtc = ValidateRevocationDate(revokedAtUtc);
     }
 
     public void Revoke(DateTimeOffset revokedAtUtc)
     {
         if (RevokedAtUtc is null)
         {
-            RevokedAtUtc = revokedAtUtc;
+            RevokedAtUtc = ValidateRevocationDate(revokedAtUtc);
         }
     }
+
+    private DateTimeOffset ValidateRevocationDate(DateTimeOffset value)
+    {
+        var revokedAtUtc = ValidateUtc(value, "data de revogação");
+        return revokedAtUtc >= CreatedAtUtc
+            ? revokedAtUtc
+            : throw new DomainRuleViolationException(
+                "A revogação do refresh token não pode ser anterior à criação.");
+    }
+
+    private static DateTimeOffset ValidateUtc(DateTimeOffset value, string field) =>
+        value != default && value.Offset == TimeSpan.Zero
+            ? value
+            : throw new DomainRuleViolationException(
+                $"A {field} deve estar em UTC.");
+
+    private static string NormalizeRequired(
+        string? value,
+        int maximumLength,
+        string field) =>
+        value?.Trim() is { Length: > 0 } normalized &&
+        normalized.Length <= maximumLength
+            ? normalized
+            : throw new DomainRuleViolationException($"O {field} é inválido.");
 }

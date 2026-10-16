@@ -121,9 +121,9 @@ do client inicial são usadas somente como entrada da seed; não são armazenada
 concatenada.
 
 Depois do provisionamento, crie os clients de APIs e workers por
-`POST /internal/v1/service-clients`. O Identity gera o segredo com aleatoriedade
+`POST /v1/service-clients`. O Identity gera o segredo com aleatoriedade
 criptográfica e o mostra uma única vez. Use
-`POST /internal/v1/service-clients/{clientId}/secret/rotate` para rotação. A rotação
+`POST /v1/service-clients/{clientId}/secret/rotate` para rotação. A rotação
 invalida imediatamente o segredo anterior; distribua o novo segredo de forma
 coordenada pelo secret manager.
 
@@ -134,12 +134,20 @@ client_id=web-bff
 client_secret=WebBff@123456
 audiences=web-bff identity-api
 scopes=store.access identity.users.create identity.users.read identity.users.write
+       identity.auth.login identity.auth.refresh identity.auth.revoke
 ```
 
 A seed não sobrescreve um client existente. Portanto, alterar
 `InitialServiceClient__Secret` não rotaciona uma credencial já persistida.
+Da mesma forma, clients já provisionados precisam receber explicitamente os
+scopes `identity.auth.login`, `identity.auth.refresh` e `identity.auth.revoke`
+antes da adoção dos endpoints protegidos de autenticação. Em desenvolvimento,
+também é possível recriar o banco.
 
 ## Health checks e auditoria
+
+A operação detalhada de logging, correlação, níveis, auditoria persistente e
+probes está em [logging-monitoring.md](logging-monitoring.md).
 
 - `/health/live` verifica somente se o processo HTTP está respondendo;
 - `/health/ready` verifica se o PostgreSQL pode ser acessado;
@@ -148,7 +156,7 @@ A seed não sobrescreve um client existente. Portanto, alterar
 As operações de criação, alteração de permissões, rotação e desativação de
 service clients geram registros em `identity.security_audit_events`. O
 provisionamento inicial também é registrado com ator `identity-migrations`.
-Consulte os eventos por `GET /internal/v1/audit-events`, usando o scope
+Consulte os eventos por `GET /v1/audit-events`, usando o scope
 `identity.audit.read`. Segredos e hashes não fazem parte do evento.
 
 ## Validação nas APIs consumidoras
@@ -171,7 +179,8 @@ Antes de publicar:
 
 - substitua todos os placeholders;
 - injete a chave privada e segredos por mecanismo seguro;
-- exponha o Identity somente pelas rotas previstas na rede;
+- mantenha o Identity na rede interna; OAuth, discovery, JWKS e health são
+  anônimos na aplicação, não públicos na internet;
 - habilite TLS;
 - limite tentativas de login na borda;
 - configure métricas e alertas sem dados sensíveis;

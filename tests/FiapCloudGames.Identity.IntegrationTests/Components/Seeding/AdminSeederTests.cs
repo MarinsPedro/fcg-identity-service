@@ -10,7 +10,10 @@ namespace FiapCloudGames.Identity.IntegrationTests.Components.Seeding;
 
 public sealed class AdminSeederTests
 {
-    [Fact]
+    private static readonly DateTimeOffset NowUtc =
+        new(2026, 1, 10, 12, 0, 0, TimeSpan.Zero);
+
+    [Fact(DisplayName = "Semear administrador - deve criar o usuário somente uma vez")]
     public async Task SeedAsync_ShouldCreateAdministratorOnlyOnce()
     {
         await using var context = CreateContext();
@@ -37,7 +40,7 @@ public sealed class AdminSeederTests
         Assert.True(administrator.IsActive);
     }
 
-    [Fact]
+    [Fact(DisplayName = "Semear administrador - deve falhar com configuração incompleta")]
     public async Task SeedAsync_WithIncompleteConfiguration_ShouldFail()
     {
         await using var context = CreateContext();
@@ -70,6 +73,11 @@ public sealed class AdminSeederTests
             context,
             new PasswordHasher(),
             Options.Create(options),
-            TimeProvider.System,
+            new FixedTimeProvider(NowUtc),
             NullLogger<AdminSeeder>.Instance);
+
+    private sealed class FixedTimeProvider(DateTimeOffset nowUtc) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => nowUtc;
+    }
 }

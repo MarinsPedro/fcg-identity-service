@@ -1,12 +1,13 @@
 using FiapCloudGames.BuildingBlocks.Exceptions;
 using FiapCloudGames.Identity.Application.Features.Users.Create;
 using FiapCloudGames.Identity.UnitTests.Support;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace FiapCloudGames.Identity.UnitTests.Application.Users;
 
 public sealed class CreateUserServiceTests
 {
-    [Fact]
+    [Fact(DisplayName = "Criar usuário - deve criar e persistir com dados válidos")]
     public async Task ExecuteAsync_WithValidInput_CreatesAndPersistsUser()
     {
         var users = new FakeUserRepository();
@@ -16,7 +17,8 @@ public sealed class CreateUserServiceTests
             users,
             unitOfWork,
             hasher,
-            new FixedTimeProvider(IdentityTestData.NowUtc));
+            new FixedTimeProvider(IdentityTestData.NowUtc),
+            NullLogger<CreateUserService>.Instance);
 
         var result = await service.ExecuteAsync(
             new CreateUserInput(
@@ -35,7 +37,7 @@ public sealed class CreateUserServiceTests
         Assert.Equal(users.AddedUser.Id, result.Id);
     }
 
-    [Fact]
+    [Fact(DisplayName = "Criar usuário - deve retornar conflito sem persistir quando o e-mail já existir")]
     public async Task ExecuteAsync_WhenEmailAlreadyExists_ReturnsConflictWithoutPersisting()
     {
         var users = new FakeUserRepository { EmailExists = true };
@@ -45,7 +47,8 @@ public sealed class CreateUserServiceTests
             users,
             unitOfWork,
             hasher,
-            new FixedTimeProvider(IdentityTestData.NowUtc));
+            new FixedTimeProvider(IdentityTestData.NowUtc),
+            NullLogger<CreateUserService>.Instance);
 
         var exception = await Assert.ThrowsAsync<AppException>(() =>
             service.ExecuteAsync(

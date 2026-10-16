@@ -14,6 +14,8 @@ namespace FiapCloudGames.Identity.IntegrationTests.Support;
 
 public sealed class IdentityApiFactory : WebApplicationFactory<Program>
 {
+    private static readonly DateTimeOffset SeedDateUtc =
+        new(2026, 1, 10, 12, 0, 0, TimeSpan.Zero);
     private readonly string databaseName = $"identity-tests-{Guid.NewGuid():N}";
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -38,6 +40,8 @@ public sealed class IdentityApiFactory : WebApplicationFactory<Program>
         });
         builder.ConfigureServices(services =>
         {
+            services.AddControllers()
+                .AddApplicationPart(typeof(TransversalTestController).Assembly);
             services.RemoveAll<DbContextOptions<IdentityDbContext>>();
             services.RemoveAll<IDbContextOptionsConfiguration<IdentityDbContext>>();
             services.AddDbContext<IdentityDbContext>(options =>
@@ -64,6 +68,9 @@ public sealed class IdentityApiFactory : WebApplicationFactory<Program>
             ["web-bff", "identity-api"],
             [
                 "store.access",
+                "identity.auth.login",
+                "identity.auth.refresh",
+                "identity.auth.revoke",
                 "identity.users.create",
                 "identity.users.read",
                 "identity.users.write",
@@ -72,7 +79,7 @@ public sealed class IdentityApiFactory : WebApplicationFactory<Program>
                 "identity.clients.write",
                 "identity.audit.read"
             ],
-            DateTimeOffset.UtcNow);
+            SeedDateUtc);
         await context.ServiceClients.AddAsync(client);
         await context.SaveChangesAsync();
     }

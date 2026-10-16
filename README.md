@@ -57,6 +57,8 @@ docs/
   architecture.md
   configuration.md
   endpoints.md
+  logging-monitoring.md
+  service-authentication-flows.md
   testing.md
 ```
 
@@ -67,6 +69,8 @@ A estratégia e as fronteiras das suítes de teste estão em
 [docs/testing.md](docs/testing.md).
 Os fluxos completos de autenticação entre BFF, APIs e serviços internos estão
 em [docs/service-authentication-flows.md](docs/service-authentication-flows.md).
+A configuração de logs, correlação, auditoria e health checks está em
+[docs/logging-monitoring.md](docs/logging-monitoring.md).
 
 ## Pré-requisitos
 
@@ -191,8 +195,8 @@ docker build `
 
 Em `Development`, a interface Swagger fica disponível em
 `http://localhost:5081/swagger`. Use `Authorize` para informar tokens Bearer.
-Login, refresh e client credentials continuam recebendo suas próprias
-credenciais nos contratos exibidos pela interface.
+Somente o endpoint de client credentials recebe `client_id` e `client_secret`
+no próprio contrato. Login, refresh e revoke exigem token de serviço.
 
 Para criar a imagem sem gravar credenciais do GitHub Packages em camadas Docker, forneça um `NuGet.Config` autenticado como secret do BuildKit:
 
@@ -206,26 +210,29 @@ docker build `
 
 | Método | Rota | Autenticação | Uso |
 |---|---|---|---|
-| `POST` | `/api/v1/auth/login` | credenciais da aplicação e do usuário | login de usuário |
-| `POST` | `/api/v1/auth/refresh` | credenciais da aplicação + refresh token | rotação do token |
-| `POST` | `/api/v1/auth/revoke` | credenciais da aplicação + refresh token | logout/revogação |
+| `POST` | `/v1/auth/login` | service + `identity.auth.login` | login de usuário |
+| `POST` | `/v1/auth/refresh` | service + `identity.auth.refresh` | rotação do token |
+| `POST` | `/v1/auth/revoke` | service + `identity.auth.revoke` | logout/revogação |
 | `POST` | `/oauth2/token` | client credentials | token de serviço |
 | `GET` | `/.well-known/jwks.json` | anônimo | chave pública para validação local |
 | `GET` | `/.well-known/openid-configuration` | anônimo | metadados do emissor |
-| `POST` | `/internal/v1/users` | service + `identity.users.create` | cria usuário |
-| `GET` | `/internal/v1/users/{id}` | service + `identity.users.read` | consulta usuário |
-| `PUT` | `/internal/v1/users/{id}` | service + `identity.users.write` | altera usuário |
-| `DELETE` | `/internal/v1/users/{id}` | service + `identity.users.write` | desativa usuário |
-| `POST` | `/internal/v1/service-clients` | service + `identity.clients.create` | cria client e exibe o segredo uma vez |
-| `GET` | `/internal/v1/service-clients/{clientId}` | service + `identity.clients.read` | consulta client sem expor segredo/hash |
-| `PUT` | `/internal/v1/service-clients/{clientId}/permissions` | service + `identity.clients.write` | substitui audiences e scopes |
-| `POST` | `/internal/v1/service-clients/{clientId}/secret/rotate` | service + `identity.clients.write` | rotaciona e exibe o novo segredo uma vez |
-| `DELETE` | `/internal/v1/service-clients/{clientId}` | service + `identity.clients.write` | desativa client |
-| `GET` | `/internal/v1/audit-events` | service + `identity.audit.read` | consulta auditoria administrativa |
+| `POST` | `/v1/users` | service + `identity.users.create` | cria usuário |
+| `GET` | `/v1/users/{id}` | service + `identity.users.read` | consulta usuário |
+| `PUT` | `/v1/users/{id}` | service + `identity.users.write` | altera usuário |
+| `DELETE` | `/v1/users/{id}` | service + `identity.users.write` | desativa usuário |
+| `POST` | `/v1/service-clients` | service + `identity.clients.create` | cria client e exibe o segredo uma vez |
+| `GET` | `/v1/service-clients/{clientId}` | service + `identity.clients.read` | consulta client sem expor segredo/hash |
+| `PUT` | `/v1/service-clients/{clientId}/permissions` | service + `identity.clients.write` | substitui audiences e scopes |
+| `POST` | `/v1/service-clients/{clientId}/secret/rotate` | service + `identity.clients.write` | rotaciona e exibe o novo segredo uma vez |
+| `DELETE` | `/v1/service-clients/{clientId}` | service + `identity.clients.write` | desativa client |
+| `GET` | `/v1/audit-events` | service + `identity.audit.read` | consulta auditoria administrativa |
+| `GET` | `/health` | anônimo interno | executa todos os health checks |
 | `GET` | `/health/live` | anônimo | confirma que o processo está vivo |
 | `GET` | `/health/ready` | anônimo | confirma que a API e o banco estão prontos |
 
-Todos os endpoints são autenticados por padrão. Somente os endpoints públicos marcados explicitamente aceitam chamadas anônimas.
+Todos os endpoints são autenticados por padrão. OAuth, discovery, JWKS e health
+aceitam chamadas anônimas na aplicação, mas devem ficar restritos à rede interna
+em produção.
 
 ## Qualidade
 

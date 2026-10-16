@@ -6,7 +6,7 @@ namespace FiapCloudGames.Identity.IntegrationTests.Host;
 public sealed class HealthEndpointTests(IdentityApiFactory factory)
     : IClassFixture<IdentityApiFactory>
 {
-    [Fact]
+    [Fact(DisplayName = "Consultar health checks - deve reportar a aplicação como ativa e pronta")]
     public async Task HealthEndpoints_WhenApplicationIsHealthy_ReportLiveAndReady()
     {
         using var client = factory.CreateClient();

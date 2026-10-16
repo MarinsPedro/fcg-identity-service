@@ -2,6 +2,15 @@ using System.Text.Json.Serialization;
 
 namespace FiapCloudGames.Identity.Presentation.Features.Discovery;
 
+/// <summary>
+/// Representa os metadados de descoberta OpenID Connect do Identity.
+/// </summary>
+/// <param name="Issuer">Identificador do emissor dos tokens.</param>
+/// <param name="TokenEndpoint">Endereço do endpoint de emissão de tokens.</param>
+/// <param name="JwksUri">Endereço do documento JWKS.</param>
+/// <param name="GrantTypesSupported">Tipos de concessão OAuth suportados.</param>
+/// <param name="TokenEndpointAuthMethodsSupported">Métodos de autenticação aceitos no token endpoint.</param>
+/// <param name="IdTokenSigningAlgValuesSupported">Algoritmos de assinatura publicados pelo emissor.</param>
 public sealed record OpenIdConfigurationResponse(
     [property: JsonPropertyName("issuer")]
     string Issuer,

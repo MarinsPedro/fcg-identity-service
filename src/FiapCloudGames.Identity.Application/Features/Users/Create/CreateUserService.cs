@@ -2,6 +2,7 @@ using FiapCloudGames.BuildingBlocks.Exceptions;
 using FiapCloudGames.Identity.Application.Abstractions.Security;
 using FiapCloudGames.Identity.Application.Abstractions.Persistence;
 using FiapCloudGames.Identity.Domain.Users;
+using Microsoft.Extensions.Logging;
 
 namespace FiapCloudGames.Identity.Application.Features.Users.Create;
 
@@ -9,12 +10,15 @@ public sealed class CreateUserService(
     IUserRepository users,
     IIdentityUnitOfWork unitOfWork,
     IPasswordHasher hasher,
-    TimeProvider clock)
+    TimeProvider clock,
+    ILogger<CreateUserService> logger)
 {
     public async Task<UserResult> ExecuteAsync(
         CreateUserInput input,
         CancellationToken cancellationToken)
     {
+        logger.LogDebug("Iniciando criação de usuário.");
+
         if (!Email.TryCreate(input.Email, out var email))
         {
             throw AppException.Validation(
@@ -34,12 +38,17 @@ public sealed class CreateUserService(
 
         if (await users.EmailExistsAsync(email, null, cancellationToken))
         {
+            logger.LogInformation(
+                "Criação de usuário rejeitada: e-mail já cadastrado.");
             throw AppException.Conflict("Já existe um usuário com este e-mail.");
         }
 
         var user = User.Create(input.Name, email, hasher.Hash(password), clock.GetUtcNow());
         await users.AddAsync(user, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        logger.LogInformation(
+            "Usuário {UserId} criado com sucesso.",
+            user.Id);
         return IdentityApplicationMappings.ToResult(user);
     }
 }

@@ -6,6 +6,7 @@ using FiapCloudGames.Identity.Application.Features.Users;
 using FiapCloudGames.Identity.Domain.ServiceClients;
 using FiapCloudGames.Identity.Domain.Sessions;
 using FiapCloudGames.Identity.Domain.Users;
+using Microsoft.Extensions.Logging;
 
 namespace FiapCloudGames.Identity.Application.Features.Authentication.Refresh;
 
@@ -15,8 +16,9 @@ public sealed class RefreshUserTokenService(
     IIdentityUnitOfWork unitOfWork,
     IRefreshTokenProtector refreshTokens,
     ITokenIssuer tokenIssuer,
-    ClientAuthenticator clientAuthenticator,
-    TimeProvider clock)
+    AuthenticatedClientResolver authenticatedClientResolver,
+    TimeProvider clock,
+    ILogger<RefreshUserTokenService> logger)
 {
     private static readonly string[] UserScopes = ["store.access"];
 
@@ -24,14 +26,20 @@ public sealed class RefreshUserTokenService(
         RefreshUserTokenInput input,
         CancellationToken cancellationToken)
     {
-        var client = await clientAuthenticator.AuthenticateAsync(
+        logger.LogDebug(
+            "Iniciando renovação de token de usuário para o client {ClientId}.",
+            input.ClientId);
+
+        var client = await authenticatedClientResolver.ResolveAsync(
             input.ClientId,
-            input.ClientSecret,
             cancellationToken);
         if (!client.CanIssueUserTokens ||
             !client.AllowsAudience(client.ClientId) ||
             !client.AllowsScopes(UserScopes))
         {
+            logger.LogWarning(
+                "Renovação de token rejeitada: client {ClientId} não pode renovar tokens de usuário.",
+                client.ClientId);
             throw AppException.Forbidden("O client não pode renovar tokens de usuário.");
         }
 
@@ -44,12 +52,16 @@ public sealed class RefreshUserTokenService(
             !current.IsUsable(now) ||
             !string.Equals(current.ClientId, client.ClientId, StringComparison.Ordinal))
         {
+            logger.LogInformation(
+                "Renovação de token rejeitada por refresh token inválido.");
             throw AppException.Authentication("Refresh token inválido.");
         }
 
         var user = await users.FindByIdAsync(current.UserId, cancellationToken);
         if (user is null || !user.IsActive)
         {
+            logger.LogInformation(
+                "Renovação de token rejeitada por refresh token inválido.");
             throw AppException.Authentication("Refresh token inválido.");
         }
 
@@ -65,6 +77,11 @@ public sealed class RefreshUserTokenService(
         current.Rotate(nextToken.Id, now);
         await refreshTokenRepository.AddAsync(nextToken, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        logger.LogInformation(
+            "Token do usuário {UserId} renovado com sucesso pelo client {ClientId}.",
+            user.Id,
+            client.ClientId);
 
         return new RefreshUserTokenResult(
             accessToken.AccessToken,

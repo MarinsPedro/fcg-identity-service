@@ -9,7 +9,10 @@ namespace FiapCloudGames.Identity.IntegrationTests.Components.Seeding;
 
 public sealed class InitialServiceClientSeederTests
 {
-    [Fact]
+    private static readonly DateTimeOffset NowUtc =
+        new(2026, 1, 10, 12, 0, 0, TimeSpan.Zero);
+
+    [Fact(DisplayName = "Semear service client inicial - deve provisionar somente o BFF e ser idempotente")]
     public async Task SeedAsync_ShouldProvisionOnlyWebBffAndBeIdempotent()
     {
         await using var context = CreateContext();
@@ -26,6 +29,7 @@ public sealed class InitialServiceClientSeederTests
         Assert.Equal("web-bff", client.ClientId);
         Assert.True(new PasswordHasher().Verify("WebBffSecret1!", client.SecretHash));
         Assert.Contains(client.AllowedAudiences, item => item.Audience == "identity-api");
+        Assert.Contains(client.AllowedScopes, item => item.Scope == "identity.auth.login");
         Assert.Contains(client.AllowedScopes, item => item.Scope == "identity.clients.write");
 
         var auditEvent = Assert.Single(await context.SecurityAuditEvents.ToListAsync());
@@ -34,7 +38,7 @@ public sealed class InitialServiceClientSeederTests
         Assert.Equal("web-bff", auditEvent.SubjectId);
     }
 
-    [Fact]
+    [Fact(DisplayName = "Semear service client inicial - deve falhar sem segredo na primeira execução")]
     public async Task SeedAsync_WithoutSecretOnFirstRun_ShouldFail()
     {
         await using var context = CreateContext();
@@ -48,7 +52,7 @@ public sealed class InitialServiceClientSeederTests
         Assert.Empty(await context.ServiceClients.ToListAsync());
     }
 
-    [Fact]
+    [Fact(DisplayName = "Semear service client inicial - deve falhar para outro client ID")]
     public async Task SeedAsync_ForAnotherClient_ShouldFail()
     {
         await using var context = CreateContext();
@@ -70,7 +74,14 @@ public sealed class InitialServiceClientSeederTests
             Secret = "WebBffSecret1!",
             CanIssueUserTokens = true,
             AllowedAudiences = ["web-bff", "identity-api"],
-            AllowedScopes = ["store.access", "identity.clients.write"]
+            AllowedScopes =
+            [
+                "store.access",
+                "identity.auth.login",
+                "identity.auth.refresh",
+                "identity.auth.revoke",
+                "identity.clients.write"
+            ]
         };
 
     private static IdentityDbContext CreateContext()
@@ -88,6 +99,11 @@ public sealed class InitialServiceClientSeederTests
             context,
             new PasswordHasher(),
             Options.Create(options),
-            TimeProvider.System,
+            new FixedTimeProvider(NowUtc),
             NullLogger<InitialServiceClientSeeder>.Instance);
+
+    private sealed class FixedTimeProvider(DateTimeOffset nowUtc) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => nowUtc;
+    }
 }

@@ -5,6 +5,7 @@ using FiapCloudGames.Identity.Application.Abstractions.Persistence;
 using FiapCloudGames.Identity.Domain.Auditing;
 using FiapCloudGames.Identity.Domain.Common;
 using FiapCloudGames.Identity.Domain.ServiceClients;
+using Microsoft.Extensions.Logging;
 
 namespace FiapCloudGames.Identity.Application.Features.ServiceClients.RotateSecret;
 
@@ -14,15 +15,28 @@ public sealed class RotateServiceClientSecretService(
     IIdentityUnitOfWork unitOfWork,
     IClientSecretGenerator secretGenerator,
     IPasswordHasher passwordHasher,
-    TimeProvider clock)
+    TimeProvider clock,
+    ILogger<RotateServiceClientSecretService> logger)
 {
     public async Task<RotateServiceClientSecretResult> ExecuteAsync(
         string clientId,
         string actorClientId,
         CancellationToken cancellationToken)
     {
-        var client = await clients.FindByIdAsync(clientId, cancellationToken)
-            ?? throw AppException.NotFound("Client não encontrado.");
+        logger.LogInformation(
+            "Iniciando rotação do segredo do service client {ClientId} por {ActorClientId}.",
+            clientId,
+            actorClientId);
+
+        var client = await clients.FindByIdAsync(clientId, cancellationToken);
+        if (client is null)
+        {
+            logger.LogInformation(
+                "Não foi possível rotacionar o segredo: service client {ClientId} não encontrado.",
+                clientId);
+            throw AppException.NotFound("Client não encontrado.");
+        }
+
         var rawSecret = secretGenerator.Generate();
         try
         {
@@ -42,6 +56,10 @@ public sealed class RotateServiceClientSecretService(
                 clock.GetUtcNow()),
             cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        logger.LogInformation(
+            "Segredo do service client {ClientId} rotacionado por {ActorClientId}.",
+            client.ClientId,
+            actorClientId);
         return new RotateServiceClientSecretResult(client.ClientId, rawSecret);
     }
 }

@@ -12,12 +12,22 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace FiapCloudGames.Identity.Presentation.Features.ServiceClients;
 
+/// <summary>
+/// Controlador responsável pelo gerenciamento de service clients.
+/// </summary>
 [ApiController]
-[Route("internal/v1/service-clients")]
+[Route("v1/service-clients")]
 public sealed class ServiceClientsController : ControllerBase
 {
     private const string GetByIdRoute = "Identity.ServiceClients.GetById";
 
+    /// <summary>
+    /// Cria um service client e retorna seu segredo uma única vez.
+    /// </summary>
+    /// <param name="request">Configuração inicial do service client.</param>
+    /// <param name="service">Serviço responsável pela criação do client.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>Client criado e segredo inicial.</returns>
     [Authorize(Policy = IdentityPolicies.ClientsCreate)]
     [HttpPost]
     [ProducesResponseType<CreateServiceClientResponse>(StatusCodes.Status201Created)]
@@ -36,6 +46,13 @@ public sealed class ServiceClientsController : ControllerBase
             response);
     }
 
+    /// <summary>
+    /// Obtém um service client pelo seu identificador.
+    /// </summary>
+    /// <param name="clientId">Identificador do service client.</param>
+    /// <param name="service">Serviço responsável pela consulta do client.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>Dados públicos e permissões do service client.</returns>
     [Authorize(Policy = IdentityPolicies.ClientsRead)]
     [HttpGet("{clientId}", Name = GetByIdRoute)]
     [ProducesResponseType<ServiceClientResponse>(StatusCodes.Status200OK)]
@@ -46,6 +63,14 @@ public sealed class ServiceClientsController : ControllerBase
         Ok(ServiceClientResponse.From(
             await service.ExecuteAsync(clientId, cancellationToken)));
 
+    /// <summary>
+    /// Substitui as audiences e os scopes permitidos para um service client.
+    /// </summary>
+    /// <param name="clientId">Identificador do service client.</param>
+    /// <param name="request">Novo conjunto completo de permissões.</param>
+    /// <param name="service">Serviço responsável pela atualização das permissões.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>Dados atualizados do service client.</returns>
     [Authorize(Policy = IdentityPolicies.ClientsWrite)]
     [HttpPut("{clientId}/permissions")]
     [ProducesResponseType<ServiceClientResponse>(StatusCodes.Status200OK)]
@@ -61,6 +86,13 @@ public sealed class ServiceClientsController : ControllerBase
                 GetActorClientId(),
                 cancellationToken)));
 
+    /// <summary>
+    /// Rotaciona o segredo de um service client.
+    /// </summary>
+    /// <param name="clientId">Identificador do service client.</param>
+    /// <param name="service">Serviço responsável pela rotação do segredo.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>Novo segredo do service client, exibido uma única vez.</returns>
     [Authorize(Policy = IdentityPolicies.ClientsWrite)]
     [HttpPost("{clientId}/secret/rotate")]
     [ProducesResponseType<RotateServiceClientSecretResponse>(StatusCodes.Status200OK)]
@@ -73,6 +105,13 @@ public sealed class ServiceClientsController : ControllerBase
             GetActorClientId(),
             cancellationToken)).ToResponse());
 
+    /// <summary>
+    /// Desativa um service client sem removê-lo fisicamente.
+    /// </summary>
+    /// <param name="clientId">Identificador do service client.</param>
+    /// <param name="service">Serviço responsável pela desativação do client.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>Resultado da operação sem conteúdo.</returns>
     [Authorize(Policy = IdentityPolicies.ClientsWrite)]
     [HttpDelete("{clientId}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

@@ -5,8 +5,16 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace FiapCloudGames.Identity.Presentation;
 
+/// <summary>
+/// Fornece a configuração dos componentes da camada de apresentação do Identity.
+/// </summary>
 public static class DependencyInjection
 {
+    /// <summary>
+    /// Registra controllers e políticas de autorização do Identity.
+    /// </summary>
+    /// <param name="services">Coleção de serviços da aplicação.</param>
+    /// <returns>A mesma coleção de serviços para encadeamento.</returns>
     public static IServiceCollection AddIdentityPresentation(this IServiceCollection services)
     {
         services
@@ -15,6 +23,24 @@ public static class DependencyInjection
 
         services.AddAuthorization(options =>
         {
+            options.AddPolicy(
+                IdentityPolicies.AuthLogin,
+                policy => policy
+                    .RequireAuthenticatedUser()
+                    .RequireServiceToken()
+                    .RequireClaim(FiapClaimTypes.Scope, "identity.auth.login"));
+            options.AddPolicy(
+                IdentityPolicies.AuthRefresh,
+                policy => policy
+                    .RequireAuthenticatedUser()
+                    .RequireServiceToken()
+                    .RequireClaim(FiapClaimTypes.Scope, "identity.auth.refresh"));
+            options.AddPolicy(
+                IdentityPolicies.AuthRevoke,
+                policy => policy
+                    .RequireAuthenticatedUser()
+                    .RequireServiceToken()
+                    .RequireClaim(FiapClaimTypes.Scope, "identity.auth.revoke"));
             options.AddPolicy(
                 IdentityPolicies.UsersCreate,
                 policy => policy

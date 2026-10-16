@@ -19,9 +19,12 @@ A suíte unitária contém somente duas áreas de comportamento e uma de suporte
 ```text
 UnitTests/
   Application/
+    Auditing/
+    Authentication/
     Users/
     ServiceClients/
   Domain/
+    Auditing/
     Users/
     ServiceClients/
     Sessions/
@@ -39,6 +42,10 @@ Regras obrigatórias:
 - usar relógio fixo e dados determinísticos;
 - verificar que falhas não persistem nem executam efeitos posteriores;
 - evitar testar getters, mapeamentos triviais ou implementação privada.
+
+Todos os casos de uso de `Application/Features` possuem uma suíte unitária
+dedicada. Os fluxos HTTP continuam cobrindo integração e segurança do contrato,
+mas não substituem os testes das decisões de Application.
 
 Exemplo de nome:
 
@@ -61,7 +68,8 @@ IntegrationTests/
   Support/
 ```
 
-- `Host`: inicialização, health checks e comportamento global do processo;
+- `Host`: inicialização, configuração de logging, Problem Details, correlação,
+  sanitização de erros, health checks e comportamento global do processo;
 - `Components`: integração de componentes técnicos que não exige contrato HTTP
   completo, como assinatura JWT e seeds;
 - `Contracts`: status code, headers, Problem Details, JSON, rotas, autorização e
@@ -96,6 +104,8 @@ As regras automatizadas devem falhar quando:
 
 - uma camada interna passa a referenciar uma camada externa;
 - Controllers aparecem fora de Presentation;
+- tipos públicos do Domain expõem setters ou construtores públicos;
+- actions de Controllers expõem tipos internos de Application ou Domain;
 - migrations aparecem fora do projeto Migrations;
 - UnitTests ganha referência de projeto além de Application e Domain;
 - UnitTests adiciona EF Core ou `Microsoft.AspNetCore.Mvc.Testing`.

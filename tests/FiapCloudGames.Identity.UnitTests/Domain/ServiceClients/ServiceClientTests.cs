@@ -1,10 +1,12 @@
 using FiapCloudGames.Identity.Domain.ServiceClients;
+using FiapCloudGames.Identity.Domain.Common;
+using FiapCloudGames.Identity.UnitTests.Support;
 
 namespace FiapCloudGames.Identity.UnitTests.Domain.ServiceClients;
 
 public sealed class ServiceClientTests
 {
-    [Fact]
+    [Fact(DisplayName = "Validar service client - deve restringir audiências e escopos")]
     public void Client_EnforcesAudienceAndScopes()
     {
         var client = ServiceClient.Create(
@@ -14,7 +16,7 @@ public sealed class ServiceClientTests
             false,
             ["payments-api"],
             ["payments.process", "payments.read"],
-            DateTimeOffset.UtcNow);
+            IdentityTestData.NowUtc);
 
         Assert.True(client.AllowsAudience("payments-api"));
         Assert.False(client.AllowsAudience("catalog-api"));
@@ -28,7 +30,7 @@ public sealed class ServiceClientTests
             client.AllowedScopes.Select(item => item.Scope));
     }
 
-    [Fact]
+    [Fact(DisplayName = "Gerenciar permissões do service client - não deve criar duplicidades")]
     public void Client_ManagesPermissionsWithoutDuplicates()
     {
         var client = ServiceClient.Create(
@@ -38,7 +40,7 @@ public sealed class ServiceClientTests
             false,
             ["payments-api"],
             ["payments.read"],
-            DateTimeOffset.UtcNow);
+            IdentityTestData.NowUtc);
 
         client.AllowAudience("payments-api");
         client.AllowAudience("catalog-api");
@@ -53,7 +55,7 @@ public sealed class ServiceClientTests
         Assert.False(client.RevokeScope("unknown.scope"));
     }
 
-    [Fact]
+    [Fact(DisplayName = "Substituir permissões do service client - não deve manter duplicidades")]
     public void Client_ReplacesPermissionsWithoutDuplicates()
     {
         var client = ServiceClient.Create(
@@ -63,7 +65,7 @@ public sealed class ServiceClientTests
             false,
             ["identity-api", "payments-api"],
             ["payments.read", "payments.write"],
-            DateTimeOffset.UtcNow);
+            IdentityTestData.NowUtc);
 
         client.ReplacePermissions(
             ["payments-api", "catalog-api", "catalog-api"],
@@ -77,7 +79,7 @@ public sealed class ServiceClientTests
             client.AllowedScopes.Select(item => item.Scope));
     }
 
-    [Fact]
+    [Fact(DisplayName = "Alterar service client - deve rotacionar o segredo e permitir desativação")]
     public void Client_RotatesSecretAndCanBeDeactivated()
     {
         var client = ServiceClient.Create(
@@ -87,12 +89,53 @@ public sealed class ServiceClientTests
             false,
             ["payments-api"],
             ["payments.write"],
-            DateTimeOffset.UtcNow);
+            IdentityTestData.NowUtc);
 
         client.RotateSecret("new-hash");
         client.Deactivate();
 
         Assert.Equal("new-hash", client.SecretHash);
         Assert.False(client.IsActive);
+    }
+
+    [Fact(DisplayName = "Criar service client - deve exigir ao menos uma audience e um scope")]
+    public void Create_WithoutPermissions_RejectsInvalidState()
+    {
+        Assert.Throws<DomainRuleViolationException>(() =>
+            ServiceClient.Create(
+                "orders-api",
+                "Orders API",
+                "secret-hash",
+                false,
+                [],
+                ["payments.read"],
+                IdentityTestData.NowUtc));
+        Assert.Throws<DomainRuleViolationException>(() =>
+            ServiceClient.Create(
+                "orders-api",
+                "Orders API",
+                "secret-hash",
+                false,
+                ["payments-api"],
+                [],
+                IdentityTestData.NowUtc));
+    }
+
+    [Fact(DisplayName = "Alterar service client inativo - deve rejeitar rotação e segunda desativação")]
+    public void Mutate_WhenClientIsInactive_RejectsInvalidTransitions()
+    {
+        var client = ServiceClient.Create(
+            "orders-api",
+            "Orders API",
+            "secret-hash",
+            false,
+            ["payments-api"],
+            ["payments.read"],
+            IdentityTestData.NowUtc);
+        client.Deactivate();
+
+        Assert.Throws<DomainRuleViolationException>(() =>
+            client.RotateSecret("new-secret-hash"));
+        Assert.Throws<DomainRuleViolationException>(client.Deactivate);
     }
 }

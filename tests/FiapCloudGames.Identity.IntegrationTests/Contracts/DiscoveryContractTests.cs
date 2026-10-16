@@ -8,7 +8,7 @@ namespace FiapCloudGames.Identity.IntegrationTests.Contracts;
 public sealed class DiscoveryContractTests(IdentityApiFactory factory)
     : IClassFixture<IdentityApiFactory>
 {
-    [Fact]
+    [Fact(DisplayName = "Consultar JWKS anonimamente - deve retornar a chave pública RSA")]
     public async Task Jwks_WhenRequestedAnonymously_ReturnsRsaPublicKey()
     {
         using var client = factory.CreateClient();
@@ -22,7 +22,7 @@ public sealed class DiscoveryContractTests(IdentityApiFactory factory)
         Assert.False(string.IsNullOrWhiteSpace(document.Keys[0].N));
     }
 
-    [Fact]
+    [Fact(DisplayName = "Consultar configuração OpenID anonimamente - deve publicar o endpoint OAuth2 de token")]
     public async Task OpenIdConfiguration_WhenRequestedAnonymously_PublishesOAuth2TokenEndpoint()
     {
         using var client = factory.CreateClient();

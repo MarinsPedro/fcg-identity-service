@@ -2,12 +2,13 @@ using FiapCloudGames.BuildingBlocks.Exceptions;
 using FiapCloudGames.Identity.Application.Features.ServiceClients.RotateSecret;
 using FiapCloudGames.Identity.Domain.ServiceClients;
 using FiapCloudGames.Identity.UnitTests.Support;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace FiapCloudGames.Identity.UnitTests.Application.ServiceClients;
 
 public sealed class RotateServiceClientSecretServiceTests
 {
-    [Fact]
+    [Fact(DisplayName = "Rotacionar segredo - deve atualizar o cliente e registrar auditoria")]
     public async Task ExecuteAsync_WhenClientExists_RotatesSecretAndCreatesAuditEvent()
     {
         var client = CreateClient();
@@ -22,7 +23,8 @@ public sealed class RotateServiceClientSecretServiceTests
             unitOfWork,
             secretGenerator,
             hasher,
-            new FixedTimeProvider(IdentityTestData.NowUtc));
+            new FixedTimeProvider(IdentityTestData.NowUtc),
+            NullLogger<RotateServiceClientSecretService>.Instance);
 
         var result = await service.ExecuteAsync(
             client.ClientId,
@@ -35,7 +37,7 @@ public sealed class RotateServiceClientSecretServiceTests
         Assert.Equal(1, unitOfWork.SaveChangesCount);
     }
 
-    [Fact]
+    [Fact(DisplayName = "Rotacionar segredo - deve retornar não encontrado sem gerar segredo quando o cliente não existir")]
     public async Task ExecuteAsync_WhenClientDoesNotExist_ReturnsNotFoundWithoutGeneratingSecret()
     {
         var clients = new FakeServiceClientRepository();
@@ -49,7 +51,8 @@ public sealed class RotateServiceClientSecretServiceTests
             unitOfWork,
             secretGenerator,
             hasher,
-            new FixedTimeProvider(IdentityTestData.NowUtc));
+            new FixedTimeProvider(IdentityTestData.NowUtc),
+            NullLogger<RotateServiceClientSecretService>.Instance);
 
         var exception = await Assert.ThrowsAsync<AppException>(() =>
             service.ExecuteAsync(

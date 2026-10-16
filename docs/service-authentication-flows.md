@@ -20,6 +20,9 @@ O `client_secret` autentica a aplicação perante o Identity. A chave privada RS
 assina o JWT, e a chave pública do JWKS permite que a API de destino confirme
 que o token foi emitido pelo Identity.
 
+Discovery e JWKS não exigem JWT para evitar dependência circular durante o
+bootstrap da validação, mas devem ser acessíveis somente na rede interna.
+
 ```text
 client_id + client_secret  → comprovam quem solicita o token
 chave privada do Identity  → assina o token

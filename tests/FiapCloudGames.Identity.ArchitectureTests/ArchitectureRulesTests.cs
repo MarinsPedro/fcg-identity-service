@@ -1,14 +1,17 @@
 using System.Reflection;
 using System.Xml.Linq;
 using FiapCloudGames.Identity.Domain.Users;
+using FiapCloudGames.Identity.Infrastructure.Persistence;
 using FiapCloudGames.Identity.Presentation.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Routing;
 
 namespace FiapCloudGames.Identity.ArchitectureTests;
 
 public sealed class ArchitectureRulesTests
 {
-    [Fact]
+    [Fact(DisplayName = "Referenciar projetos - deve seguir a direção da Clean Architecture")]
     public void ProjectReferences_FollowCleanArchitectureDirection()
     {
         AssertProjectReferences("Domain");
@@ -19,7 +22,7 @@ public sealed class ArchitectureRulesTests
         AssertProjectReferences("Migrations", "Infrastructure");
     }
 
-    [Fact]
+    [Fact(DisplayName = "Referenciar testes unitários - deve incluir somente Domain e Application")]
     public void UnitTests_ReferenceOnlyDomainAndApplication()
     {
         var root = FindRepositoryRoot();
@@ -59,7 +62,7 @@ public sealed class ArchitectureRulesTests
                 StringComparison.OrdinalIgnoreCase));
     }
 
-    [Fact]
+    [Fact(DisplayName = "Referenciar o domínio - não deve incluir camadas externas ou frameworks")]
     public void Domain_DoesNotReferenceOuterLayersOrFrameworks()
     {
         AssertDoesNotReference(
@@ -71,7 +74,7 @@ public sealed class ArchitectureRulesTests
             "Microsoft.EntityFrameworkCore");
     }
 
-    [Fact]
+    [Fact(DisplayName = "Referenciar a aplicação - não deve incluir camadas externas, HTTP ou dados")]
     public void Application_DoesNotReferenceOuterLayersOrHttpAndDataFrameworks()
     {
         AssertDoesNotReference(
@@ -82,23 +85,94 @@ public sealed class ArchitectureRulesTests
             "Microsoft.EntityFrameworkCore");
     }
 
-    [Fact]
+    [Fact(DisplayName = "Declarar controllers - deve ocorrer somente na camada Presentation")]
     public void Controllers_LiveOnlyInPresentation()
     {
-        var presentationControllers = typeof(IdentityPolicies).Assembly
-            .GetTypes()
-            .Where(type => !type.IsAbstract && typeof(ControllerBase).IsAssignableFrom(type))
-            .ToArray();
-        var apiControllers = typeof(Program).Assembly
-            .GetTypes()
-            .Where(type => !type.IsAbstract && typeof(ControllerBase).IsAssignableFrom(type))
+        var presentationAssembly = typeof(IdentityPolicies).Assembly;
+        var productionAssemblies = new[]
+        {
+            typeof(User).Assembly,
+            typeof(FiapCloudGames.Identity.Application.DependencyInjection).Assembly,
+            typeof(IdentityDbContext).Assembly,
+            presentationAssembly,
+            typeof(Program).Assembly
+        };
+        var controllers = productionAssemblies
+            .SelectMany(assembly => assembly.GetTypes())
+            .Where(type =>
+                !type.IsAbstract &&
+                typeof(ControllerBase).IsAssignableFrom(type))
             .ToArray();
 
-        Assert.NotEmpty(presentationControllers);
-        Assert.Empty(apiControllers);
+        Assert.NotEmpty(controllers);
+        Assert.All(
+            controllers,
+            controller => Assert.Same(presentationAssembly, controller.Assembly));
     }
 
-    [Fact]
+    [Fact(DisplayName = "Expor estado do domínio - não deve permitir setters públicos")]
+    public void DomainTypes_DoNotExposePublicPropertySetters()
+    {
+        var violations = GetDomainClasses()
+            .SelectMany(type => type.GetProperties()
+                .Where(property => property.SetMethod?.IsPublic == true)
+                .Select(property => $"{type.FullName}.{property.Name}"))
+            .ToArray();
+
+        Assert.Empty(violations);
+    }
+
+    [Fact(DisplayName = "Construir tipos do domínio - não deve permitir construtores públicos")]
+    public void DomainTypes_DoNotExposePublicConstructors()
+    {
+        var violations = GetDomainClasses()
+            .Where(type => type.GetConstructors(
+                BindingFlags.Public | BindingFlags.Instance).Length > 0)
+            .Select(type => type.FullName)
+            .ToArray();
+
+        Assert.Empty(violations);
+    }
+
+    [Fact(DisplayName = "Retornar dados dos controllers - não deve expor tipos internos de Application ou Domain")]
+    public void ControllerActions_DoNotExposeInternalLayerTypes()
+    {
+        var violations = typeof(IdentityPolicies).Assembly
+            .GetTypes()
+            .Where(type =>
+                !type.IsAbstract &&
+                typeof(ControllerBase).IsAssignableFrom(type))
+            .SelectMany(controller => controller
+                .GetMethods(BindingFlags.Public | BindingFlags.Instance)
+                .Where(method => method.GetCustomAttributes<HttpMethodAttribute>(true).Any())
+                .SelectMany(method => GetNestedTypes(method.ReturnType)
+                    .Where(IsInternalLayerType)
+                    .Select(type => $"{controller.FullName}.{method.Name}: {type.FullName}")))
+            .ToArray();
+
+        Assert.Empty(violations);
+    }
+
+    [Fact(DisplayName = "Autorizar actions - deve declarar anonimato ou política explícita")]
+    public void ControllerActions_DeclareAnonymousAccessOrExplicitPolicy()
+    {
+        var violations = typeof(IdentityPolicies).Assembly
+            .GetTypes()
+            .Where(type =>
+                !type.IsAbstract &&
+                typeof(ControllerBase).IsAssignableFrom(type))
+            .SelectMany(controller => controller
+                .GetMethods(BindingFlags.Public | BindingFlags.Instance)
+                .Where(method => method.GetCustomAttributes<HttpMethodAttribute>(true).Any())
+                .Where(method => !AllowsAnonymous(controller, method))
+                .Where(method => !HasExplicitPolicy(controller, method))
+                .Select(method => $"{controller.FullName}.{method.Name}"))
+            .ToArray();
+
+        Assert.Empty(violations);
+    }
+
+    [Fact(DisplayName = "Declarar migrations do EF - deve ocorrer somente no executável de migrations")]
     public void EfMigrations_LiveOnlyInMigrationsExecutable()
     {
         var root = FindRepositoryRoot();
@@ -163,6 +237,56 @@ public sealed class ArchitectureRulesTests
 
         Assert.Empty(violations);
     }
+
+    private static Type[] GetDomainClasses() =>
+        typeof(User).Assembly
+            .GetTypes()
+            .Where(type =>
+                type.IsClass &&
+                type.IsPublic &&
+                !type.IsAbstract &&
+                type.Namespace?.StartsWith(
+                    "FiapCloudGames.Identity.Domain",
+                    StringComparison.Ordinal) == true &&
+                !typeof(Exception).IsAssignableFrom(type))
+            .ToArray();
+
+    private static IEnumerable<Type> GetNestedTypes(Type type)
+    {
+        yield return type;
+        if (type.IsArray)
+        {
+            foreach (var nested in GetNestedTypes(type.GetElementType()!))
+            {
+                yield return nested;
+            }
+        }
+
+        foreach (var argument in type.GetGenericArguments())
+        {
+            foreach (var nested in GetNestedTypes(argument))
+            {
+                yield return nested;
+            }
+        }
+    }
+
+    private static bool IsInternalLayerType(Type type) =>
+        type.Namespace?.StartsWith(
+            "FiapCloudGames.Identity.Application",
+            StringComparison.Ordinal) == true ||
+        type.Namespace?.StartsWith(
+            "FiapCloudGames.Identity.Domain",
+            StringComparison.Ordinal) == true;
+
+    private static bool AllowsAnonymous(Type controller, MethodInfo method) =>
+        controller.GetCustomAttributes<AllowAnonymousAttribute>(true).Any() ||
+        method.GetCustomAttributes<AllowAnonymousAttribute>(true).Any();
+
+    private static bool HasExplicitPolicy(Type controller, MethodInfo method) =>
+        controller.GetCustomAttributes<AuthorizeAttribute>(true)
+            .Concat(method.GetCustomAttributes<AuthorizeAttribute>(true))
+            .Any(attribute => !string.IsNullOrWhiteSpace(attribute.Policy));
 
     private static void AssertProjectReferences(string layer, params string[] expectedLayers)
     {

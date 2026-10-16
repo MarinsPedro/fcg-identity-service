@@ -36,12 +36,12 @@ internal sealed class AdminSeeder(
             if (existingUser.Role != UserRole.Administrator)
             {
                 throw new InvalidOperationException(
-                    $"O e-mail '{email.Value}' já pertence a um usuário que não é administrador.");
+                    "O e-mail configurado já pertence a um usuário que não é administrador.");
             }
 
             logger.LogInformation(
-                "Administrador {AdminEmail} já existe; seed ignorado.",
-                email.Value);
+                "Administrador {UserId} já existe; seed ignorado.",
+                existingUser.Id);
             return;
         }
 
@@ -55,8 +55,8 @@ internal sealed class AdminSeeder(
         await context.Users.AddAsync(administrator, cancellationToken);
         await context.SaveChangesAsync(cancellationToken);
         logger.LogInformation(
-            "Administrador {AdminEmail} criado pelo seed.",
-            email.Value);
+            "Administrador {UserId} criado pelo seed.",
+            administrator.Id);
     }
 
     private static bool IsRequested(AdminSeedOptions options) =>

@@ -7,6 +7,12 @@ using FiapCloudGames.Identity.Presentation;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddFiapServiceDefaults();
+builder.Logging.AddSimpleConsole(options =>
+{
+    options.IncludeScopes = true;
+    options.SingleLine = true;
+    options.TimestampFormat = "yyyy-MM-dd HH:mm:ss.fff zzz ";
+});
 builder.Services.AddFiapApiDefaults();
 builder.Services.AddIdentityInfrastructure(builder.Configuration);
 builder.Services.AddIdentityPresentation();

@@ -2,12 +2,13 @@ using FiapCloudGames.BuildingBlocks.Exceptions;
 using FiapCloudGames.Identity.Application.Features.ServiceClients.Create;
 using FiapCloudGames.Identity.Domain.ServiceClients;
 using FiapCloudGames.Identity.UnitTests.Support;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace FiapCloudGames.Identity.UnitTests.Application.ServiceClients;
 
 public sealed class CreateServiceClientServiceTests
 {
-    [Fact]
+    [Fact(DisplayName = "Criar service client - deve persistir o cliente e registrar auditoria")]
     public async Task ExecuteAsync_WithValidInput_CreatesClientAndAuditEvent()
     {
         var clients = new FakeServiceClientRepository();
@@ -21,7 +22,8 @@ public sealed class CreateServiceClientServiceTests
             unitOfWork,
             secretGenerator,
             hasher,
-            new FixedTimeProvider(IdentityTestData.NowUtc));
+            new FixedTimeProvider(IdentityTestData.NowUtc),
+            NullLogger<CreateServiceClientService>.Instance);
 
         var result = await service.ExecuteAsync(
             new CreateServiceClientInput(
@@ -42,7 +44,7 @@ public sealed class CreateServiceClientServiceTests
         Assert.Equal(1, unitOfWork.SaveChangesCount);
     }
 
-    [Fact]
+    [Fact(DisplayName = "Criar service client - deve retornar conflito sem persistir quando já existir")]
     public async Task ExecuteAsync_WhenClientAlreadyExists_ReturnsConflictWithoutPersisting()
     {
         var clients = new FakeServiceClientRepository
@@ -59,7 +61,8 @@ public sealed class CreateServiceClientServiceTests
             unitOfWork,
             secretGenerator,
             hasher,
-            new FixedTimeProvider(IdentityTestData.NowUtc));
+            new FixedTimeProvider(IdentityTestData.NowUtc),
+            NullLogger<CreateServiceClientService>.Instance);
 
         var exception = await Assert.ThrowsAsync<AppException>(() =>
             service.ExecuteAsync(

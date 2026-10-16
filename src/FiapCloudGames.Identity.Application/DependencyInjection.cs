@@ -22,6 +22,7 @@ public static class DependencyInjection
     public static IServiceCollection AddIdentityApplication(this IServiceCollection services)
     {
         services.AddScoped<ClientAuthenticator>();
+        services.AddScoped<AuthenticatedClientResolver>();
         services.AddScoped<CreateUserService>();
         services.AddScoped<LoginService>();
         services.AddScoped<ClientCredentialsService>();

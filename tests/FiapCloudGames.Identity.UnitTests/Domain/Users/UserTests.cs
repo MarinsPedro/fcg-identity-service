@@ -6,7 +6,7 @@ namespace FiapCloudGames.Identity.UnitTests.Domain.Users;
 
 public sealed class UserTests
 {
-    [Fact]
+    [Fact(DisplayName = "Criar usuário - deve criar usuário ativo com dados normalizados")]
     public void Create_WithValidData_CreatesActiveUserWithNormalizedDetails()
     {
         var user = User.Create(
@@ -22,7 +22,7 @@ public sealed class UserTests
         Assert.Equal(IdentityTestData.NowUtc, user.CreatedAtUtc);
     }
 
-    [Fact]
+    [Fact(DisplayName = "Criar usuário - deve rejeitar data de criação fora de UTC")]
     public void Create_WithNonUtcCreationDate_RejectsInvalidState()
     {
         var nonUtcDate = new DateTimeOffset(2026, 1, 10, 12, 0, 0, TimeSpan.FromHours(-3));
@@ -37,7 +37,7 @@ public sealed class UserTests
         Assert.Equal("A data de criação deve estar em UTC.", exception.Message);
     }
 
-    [Fact]
+    [Fact(DisplayName = "Desativar usuário - deve alterar o estado para inativo")]
     public void Deactivate_WhenActive_ChangesStateToInactive()
     {
         var user = User.Create(
@@ -49,5 +49,18 @@ public sealed class UserTests
         user.Deactivate();
 
         Assert.False(user.IsActive);
+    }
+
+    [Theory(DisplayName = "Alterar usuário - deve rejeitar nome fora dos limites")]
+    [InlineData("")]
+    [InlineData("A")]
+    public void ChangeDetails_WithInvalidName_RejectsInvalidState(string name)
+    {
+        var user = IdentityTestData.CreateUser();
+
+        Assert.Throws<DomainRuleViolationException>(() =>
+            user.ChangeDetails(
+                name,
+                Email.Create("novo@fiap.com.br")));
     }
 }
