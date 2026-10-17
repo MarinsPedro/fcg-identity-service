@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using FiapCloudGames.BuildingBlocks.Authentication;
+using FiapCloudGames.BuildingBlocks.Web;
 using FiapCloudGames.Identity.Application.Features.Authentication.Login;
 using FiapCloudGames.Identity.Application.Features.Authentication.Refresh;
 using FiapCloudGames.Identity.Application.Features.Authentication.Revoke;
@@ -27,6 +28,16 @@ public sealed class AuthenticationController : ControllerBase
     [Authorize(Policy = IdentityPolicies.AuthLogin)]
     [HttpPost("login")]
     [ProducesResponseType<TokenPairResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status400BadRequest,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status401Unauthorized,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status403Forbidden,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status415UnsupportedMediaType,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status500InternalServerError,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
     public async Task<ActionResult<TokenPairResponse>> LoginAsync(
         [FromBody] LoginRequest request,
         [FromServices] LoginService service,
@@ -48,6 +59,16 @@ public sealed class AuthenticationController : ControllerBase
     [Authorize(Policy = IdentityPolicies.AuthRefresh)]
     [HttpPost("refresh")]
     [ProducesResponseType<TokenPairResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status400BadRequest,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status401Unauthorized,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status403Forbidden,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status415UnsupportedMediaType,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status500InternalServerError,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
     public async Task<ActionResult<TokenPairResponse>> RefreshAsync(
         [FromBody] RefreshRequest request,
         [FromServices] RefreshUserTokenService service,
@@ -69,6 +90,16 @@ public sealed class AuthenticationController : ControllerBase
     [Authorize(Policy = IdentityPolicies.AuthRevoke)]
     [HttpPost("revoke")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status400BadRequest,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status401Unauthorized,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status403Forbidden,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status415UnsupportedMediaType,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status500InternalServerError,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
     public async Task<IActionResult> RevokeAsync(
         [FromBody] RevokeRefreshTokenRequest request,
         [FromServices] RevokeRefreshTokenService service,

@@ -1,3 +1,4 @@
+using FiapCloudGames.BuildingBlocks.Web;
 using FiapCloudGames.Identity.Application.Abstractions.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -20,6 +21,8 @@ public sealed class DiscoveryController(ITokenDiscoveryProvider tokens) : Contro
     /// <returns>Documento JSON Web Key Set do emissor.</returns>
     [HttpGet("jwks.json")]
     [ProducesResponseType<JwksResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status500InternalServerError,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
     public ActionResult<JwksResponse> Jwks() =>
         Ok(JwksResponse.From(tokens.GetJwks()));
 
@@ -29,6 +32,8 @@ public sealed class DiscoveryController(ITokenDiscoveryProvider tokens) : Contro
     /// <returns>Metadados do emissor, do token endpoint e do JWKS.</returns>
     [HttpGet("openid-configuration")]
     [ProducesResponseType<OpenIdConfigurationResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status500InternalServerError,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
     public ActionResult<OpenIdConfigurationResponse> OpenIdConfiguration()
     {
         var authority = $"{Request.Scheme}://{Request.Host}";

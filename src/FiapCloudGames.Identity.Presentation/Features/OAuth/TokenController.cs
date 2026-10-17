@@ -1,3 +1,4 @@
+using FiapCloudGames.BuildingBlocks.Web;
 using FiapCloudGames.Identity.Application.Features.Authentication.ClientCredentials;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -27,6 +28,16 @@ public sealed class TokenController : ControllerBase
     [HttpPost("token")]
     [Consumes("application/x-www-form-urlencoded")]
     [ProducesResponseType<ServiceTokenResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status400BadRequest,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status401Unauthorized,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status403Forbidden,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status415UnsupportedMediaType,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status500InternalServerError,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
     public async Task<ActionResult<ServiceTokenResponse>> IssueAsync(
         [FromForm(Name = "grant_type")] string grantType,
         [FromForm(Name = "client_id")] string clientId,

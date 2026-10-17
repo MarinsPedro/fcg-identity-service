@@ -1,3 +1,4 @@
+using FiapCloudGames.BuildingBlocks.Web;
 using FiapCloudGames.Identity.Application.Features.Users.Create;
 using FiapCloudGames.Identity.Application.Features.Users.Deactivate;
 using FiapCloudGames.Identity.Application.Features.Users.Get;
@@ -28,6 +29,18 @@ public sealed class UsersController : ControllerBase
     [Authorize(Policy = IdentityPolicies.UsersCreate)]
     [HttpPost]
     [ProducesResponseType<UserResponse>(StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status400BadRequest,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status401Unauthorized,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status403Forbidden,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status409Conflict,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status415UnsupportedMediaType,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status500InternalServerError,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
     public async Task<ActionResult<UserResponse>> CreateAsync(
         [FromBody] CreateUserRequest request,
         [FromServices] CreateUserService service,
@@ -53,6 +66,14 @@ public sealed class UsersController : ControllerBase
     [Authorize(Policy = IdentityPolicies.UsersRead)]
     [HttpGet("{id:guid}", Name = GetByIdRoute)]
     [ProducesResponseType<UserResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status401Unauthorized,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status403Forbidden,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status404NotFound,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status500InternalServerError,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
     public async Task<ActionResult<UserResponse>> GetAsync(
         Guid id,
         [FromServices] GetUserService service,
@@ -70,6 +91,20 @@ public sealed class UsersController : ControllerBase
     [Authorize(Policy = IdentityPolicies.UsersWrite)]
     [HttpPut("{id:guid}")]
     [ProducesResponseType<UserResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status400BadRequest,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status401Unauthorized,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status403Forbidden,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status404NotFound,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status409Conflict,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status415UnsupportedMediaType,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status500InternalServerError,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
     public async Task<ActionResult<UserResponse>> UpdateAsync(
         Guid id,
         [FromBody] UpdateUserRequest request,
@@ -93,6 +128,16 @@ public sealed class UsersController : ControllerBase
     [Authorize(Policy = IdentityPolicies.UsersWrite)]
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status401Unauthorized,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status403Forbidden,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status404NotFound,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status409Conflict,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status500InternalServerError,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
     public async Task<IActionResult> DeactivateAsync(
         Guid id,
         [FromServices] DeactivateUserService service,

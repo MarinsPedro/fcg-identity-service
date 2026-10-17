@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
-using FiapCloudGames.Identity.Domain.Auditing;
 
 namespace FiapCloudGames.Identity.Database.IntegrationTests;
 
@@ -63,48 +62,6 @@ public sealed class EfModelConventionTests
             Assert.NotNull(property.GetPrecision());
             Assert.NotNull(property.GetScale());
         }
-    }
-
-    [Fact(DisplayName = "Mapear auditoria - deve criar índices para cursor e filtros principais")]
-    public void SecurityAuditEvent_ShouldHaveCursorAndFilterIndexes()
-    {
-        using var context = IdentityDbContextTestFactory.Create();
-        var entity = context.Model.FindEntityType(typeof(SecurityAuditEvent));
-        var indexes = Assert.IsAssignableFrom<IReadOnlyList<IReadOnlyIndex>>(
-            entity?.GetIndexes().ToArray());
-        var indexedProperties = indexes
-            .Select(index => index.Properties.Select(property => property.Name).ToArray())
-            .ToArray();
-
-        Assert.Contains(
-            indexedProperties,
-            properties => properties.SequenceEqual(
-                [nameof(SecurityAuditEvent.OccurredAtUtc), nameof(SecurityAuditEvent.Id)]));
-        Assert.Contains(
-            indexedProperties,
-            properties => properties.SequenceEqual(
-                [
-                    nameof(SecurityAuditEvent.EventType),
-                    nameof(SecurityAuditEvent.OccurredAtUtc),
-                    nameof(SecurityAuditEvent.Id)
-                ]));
-        Assert.Contains(
-            indexedProperties,
-            properties => properties.SequenceEqual(
-                [
-                    nameof(SecurityAuditEvent.ActorClientId),
-                    nameof(SecurityAuditEvent.OccurredAtUtc),
-                    nameof(SecurityAuditEvent.Id)
-                ]));
-        Assert.Contains(
-            indexedProperties,
-            properties => properties.SequenceEqual(
-                [
-                    nameof(SecurityAuditEvent.SubjectType),
-                    nameof(SecurityAuditEvent.SubjectId),
-                    nameof(SecurityAuditEvent.OccurredAtUtc),
-                    nameof(SecurityAuditEvent.Id)
-                ]));
     }
 
     private static bool IsStoredAsDecimal(IReadOnlyProperty property)

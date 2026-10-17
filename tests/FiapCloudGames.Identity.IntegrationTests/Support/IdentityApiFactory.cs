@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
@@ -26,18 +25,13 @@ public sealed class IdentityApiFactory : WebApplicationFactory<Program>
             logging.ClearProviders();
             logging.AddConsole();
         });
-        builder.ConfigureAppConfiguration((_, configuration) =>
-        {
-            configuration.AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["ConnectionStrings:Database"] =
-                    "Host=localhost;Database=integration;Username=test;Password=test",
-                ["Jwt:Issuer"] = "integration-issuer",
-                ["Jwt:PrivateKeyPath"] = null,
-                ["Jwt:AllowEphemeralDevelopmentKey"] = "true",
-                ["Logging:LogLevel:Default"] = "Warning"
-            });
-        });
+        builder.UseSetting(
+            "ConnectionStrings:Database",
+            "Host=localhost;Database=integration;Username=test;Password=test");
+        builder.UseSetting("Jwt:Issuer", "identity-integration-tests");
+        builder.UseSetting("Jwt:PrivateKeyPath", string.Empty);
+        builder.UseSetting("Jwt:AllowEphemeralDevelopmentKey", "true");
+        builder.UseSetting("Logging:LogLevel:Default", "Warning");
         builder.ConfigureServices(services =>
         {
             services.AddControllers()

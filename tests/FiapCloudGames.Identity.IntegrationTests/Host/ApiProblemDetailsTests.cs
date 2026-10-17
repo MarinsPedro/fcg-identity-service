@@ -35,6 +35,33 @@ public sealed class ApiProblemDetailsTests(IdentityApiFactory factory)
         Assert.False(string.IsNullOrWhiteSpace(problem?["traceId"]?.GetValue<string>()));
     }
 
+    [Fact(DisplayName = "Rejeitar requisição sem escopo - deve retornar Problem Details proibido")]
+    public async Task ForbiddenRequest_ShouldReturnProblemDetails()
+    {
+        using var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue(
+                "Bearer",
+                await GetServiceTokenAsync(client, "identity.users.create"));
+
+        using var response = await client.PostAsJsonAsync(
+            "/v1/auth/login",
+            new
+            {
+                email = "user@example.com",
+                password = "Password1!"
+            });
+        var problem = await response.Content.ReadFromJsonAsync<JsonObject>();
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.Equal(
+            "application/problem+json",
+            response.Content.Headers.ContentType?.MediaType);
+        Assert.Equal(403, problem?["status"]?.GetValue<int>());
+        Assert.False(string.IsNullOrWhiteSpace(
+            problem?["traceId"]?.GetValue<string>()));
+    }
+
     [Fact(DisplayName = "Receber JSON malformado - deve retornar Problem Details de validação sem expor conteúdo")]
     public async Task MalformedJson_ShouldReturnSafeValidationProblemDetails()
     {
@@ -77,7 +104,9 @@ public sealed class ApiProblemDetailsTests(IdentityApiFactory factory)
         Assert.DoesNotContain("InvalidOperationException", responseBody, StringComparison.Ordinal);
     }
 
-    private async Task<string> GetServiceTokenAsync(HttpClient client)
+    private async Task<string> GetServiceTokenAsync(
+        HttpClient client,
+        string scope = "identity.auth.login")
     {
         await factory.EnsureServiceClientAsync();
         using var response = await client.PostAsync(
@@ -88,7 +117,7 @@ public sealed class ApiProblemDetailsTests(IdentityApiFactory factory)
                 ["client_id"] = "web-bff",
                 ["client_secret"] = "IntegrationSecret1!",
                 ["audience"] = "identity-api",
-                ["scope"] = "identity.auth.login"
+                ["scope"] = scope
             }));
         response.EnsureSuccessStatusCode();
         var token = await response.Content.ReadFromJsonAsync<JsonObject>();

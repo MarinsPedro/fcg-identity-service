@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using FiapCloudGames.BuildingBlocks.Authentication;
+using FiapCloudGames.BuildingBlocks.Web;
 using FiapCloudGames.Identity.Application.Features.ServiceClients.Create;
 using FiapCloudGames.Identity.Application.Features.ServiceClients.Deactivate;
 using FiapCloudGames.Identity.Application.Features.ServiceClients.Get;
@@ -31,6 +32,18 @@ public sealed class ServiceClientsController : ControllerBase
     [Authorize(Policy = IdentityPolicies.ClientsCreate)]
     [HttpPost]
     [ProducesResponseType<CreateServiceClientResponse>(StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status400BadRequest,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status401Unauthorized,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status403Forbidden,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status409Conflict,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status415UnsupportedMediaType,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status500InternalServerError,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
     public async Task<ActionResult<CreateServiceClientResponse>> CreateAsync(
         [FromBody] CreateServiceClientRequest request,
         [FromServices] CreateServiceClientService service,
@@ -56,6 +69,14 @@ public sealed class ServiceClientsController : ControllerBase
     [Authorize(Policy = IdentityPolicies.ClientsRead)]
     [HttpGet("{clientId}", Name = GetByIdRoute)]
     [ProducesResponseType<ServiceClientResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status401Unauthorized,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status403Forbidden,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status404NotFound,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status500InternalServerError,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
     public async Task<ActionResult<ServiceClientResponse>> GetAsync(
         string clientId,
         [FromServices] GetServiceClientService service,
@@ -74,6 +95,20 @@ public sealed class ServiceClientsController : ControllerBase
     [Authorize(Policy = IdentityPolicies.ClientsWrite)]
     [HttpPut("{clientId}/permissions")]
     [ProducesResponseType<ServiceClientResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status400BadRequest,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status401Unauthorized,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status403Forbidden,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status404NotFound,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status409Conflict,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status415UnsupportedMediaType,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status500InternalServerError,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
     public async Task<ActionResult<ServiceClientResponse>> UpdatePermissionsAsync(
         string clientId,
         [FromBody] UpdateServiceClientPermissionsRequest request,
@@ -96,6 +131,16 @@ public sealed class ServiceClientsController : ControllerBase
     [Authorize(Policy = IdentityPolicies.ClientsWrite)]
     [HttpPost("{clientId}/secret/rotate")]
     [ProducesResponseType<RotateServiceClientSecretResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status401Unauthorized,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status403Forbidden,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status404NotFound,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status409Conflict,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status500InternalServerError,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
     public async Task<ActionResult<RotateServiceClientSecretResponse>> RotateSecretAsync(
         string clientId,
         [FromServices] RotateServiceClientSecretService service,
@@ -115,6 +160,16 @@ public sealed class ServiceClientsController : ControllerBase
     [Authorize(Policy = IdentityPolicies.ClientsWrite)]
     [HttpDelete("{clientId}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status401Unauthorized,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status403Forbidden,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status404NotFound,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status409Conflict,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status500InternalServerError,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
     public async Task<IActionResult> DeactivateAsync(
         string clientId,
         [FromServices] DeactivateServiceClientService service,

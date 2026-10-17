@@ -1,3 +1,4 @@
+using FiapCloudGames.BuildingBlocks.Web;
 using FiapCloudGames.Identity.Application.Features.Auditing.GetSecurityAuditEvents;
 using FiapCloudGames.Identity.Presentation.Authorization;
 using FiapCloudGames.Identity.Presentation.Pagination;
@@ -25,6 +26,14 @@ public sealed class SecurityAuditController : ControllerBase
     [HttpGet]
     [ProducesResponseType<CursorPageResponse<SecurityAuditEventResponse>>(
         StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status400BadRequest,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status401Unauthorized,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status403Forbidden,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status500InternalServerError,
+        FiapApiDefaultsExtensions.ProblemJsonContentType)]
     public async Task<ActionResult<CursorPageResponse<SecurityAuditEventResponse>>> GetAsync(
         [FromQuery] SecurityAuditEventsQueryRequest request,
         [FromServices] GetSecurityAuditEventsService service,
