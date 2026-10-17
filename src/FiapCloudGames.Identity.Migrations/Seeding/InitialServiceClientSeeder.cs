@@ -27,13 +27,19 @@ internal sealed class InitialServiceClientSeeder(
                 "O único client inicial permitido é 'web-bff'.");
         }
 
-        if (await context.ServiceClients.AnyAsync(
-            client => client.ClientId == InitialServiceClientOptions.RequiredClientId,
-            cancellationToken))
+        var existingClient = await context.ServiceClients
+            .Include(client => client.AllowedAudiences)
+            .Include(client => client.AllowedScopes)
+            .AsSplitQuery()
+            .SingleOrDefaultAsync(
+                client => client.ClientId == InitialServiceClientOptions.RequiredClientId,
+                cancellationToken);
+        if (existingClient is not null)
         {
-            logger.LogInformation(
-                "Client inicial {ClientId} já existe; seed ignorado.",
-                InitialServiceClientOptions.RequiredClientId);
+            await AddMissingPermissionsAsync(
+                existingClient,
+                options,
+                cancellationToken);
             return;
         }
 
@@ -65,6 +71,51 @@ internal sealed class InitialServiceClientSeeder(
         await context.SaveChangesAsync(cancellationToken);
         logger.LogInformation(
             "Client inicial {ClientId} provisionado pelo migrador.",
+            client.ClientId);
+    }
+
+    private async Task AddMissingPermissionsAsync(
+        ServiceClient client,
+        InitialServiceClientOptions options,
+        CancellationToken cancellationToken)
+    {
+        var audienceCount = client.AllowedAudiences.Count;
+        var scopeCount = client.AllowedScopes.Count;
+
+        foreach (var audience in options.AllowedAudiences)
+        {
+            client.AllowAudience(audience);
+        }
+
+        foreach (var scope in options.AllowedScopes)
+        {
+            client.GrantScope(scope);
+        }
+
+        var addedAudienceCount = client.AllowedAudiences.Count - audienceCount;
+        var addedScopeCount = client.AllowedScopes.Count - scopeCount;
+        if (addedAudienceCount == 0 && addedScopeCount == 0)
+        {
+            logger.LogInformation(
+                "Client inicial {ClientId} já existe e suas permissões estão atualizadas.",
+                client.ClientId);
+            return;
+        }
+
+        var auditEvent = SecurityAuditEvent.Create(
+            "service_client.permissions_changed",
+            "identity-migrations",
+            "service_client",
+            client.ClientId,
+            clock.GetUtcNow());
+
+        await context.SecurityAuditEvents.AddAsync(auditEvent, cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
+        logger.LogInformation(
+            "Seed adicionou {AudienceCount} audience(s) e {ScopeCount} scope(s) " +
+            "ao client inicial {ClientId}.",
+            addedAudienceCount,
+            addedScopeCount,
             client.ClientId);
     }
 }

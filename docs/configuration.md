@@ -137,12 +137,13 @@ scopes=store.access identity.users.create identity.users.read identity.users.wri
        identity.auth.login identity.auth.refresh identity.auth.revoke
 ```
 
-A seed não sobrescreve um client existente. Portanto, alterar
-`InitialServiceClient__Secret` não rotaciona uma credencial já persistida.
-Da mesma forma, clients já provisionados precisam receber explicitamente os
-scopes `identity.auth.login`, `identity.auth.refresh` e `identity.auth.revoke`
-antes da adoção dos endpoints protegidos de autenticação. Em desenvolvimento,
-também é possível recriar o banco.
+A seed não troca o segredo, o nome, o estado ou a capacidade de emitir tokens
+de um client existente. Ela adiciona ao `web-bff` somente as audiences e os
+scopes configurados que ainda estiverem ausentes, sem remover permissões extras.
+Assim, executar novamente o migrador atualiza bancos provisionados por versões
+anteriores e registra a mudança na auditoria. Alterar
+`InitialServiceClient__Secret` continua sem rotacionar uma credencial já
+persistida.
 
 ## Health checks e auditoria
 

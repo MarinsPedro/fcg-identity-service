@@ -1,3 +1,4 @@
+using FiapCloudGames.Identity.Domain.ServiceClients;
 using FiapCloudGames.Identity.Infrastructure.Persistence;
 using FiapCloudGames.Identity.Infrastructure.Security;
 using FiapCloudGames.Identity.Migrations.Seeding;
@@ -34,6 +35,47 @@ public sealed class InitialServiceClientSeederTests
 
         var auditEvent = Assert.Single(await context.SecurityAuditEvents.ToListAsync());
         Assert.Equal("service_client.provisioned", auditEvent.EventType);
+        Assert.Equal("identity-migrations", auditEvent.ActorClientId);
+        Assert.Equal("web-bff", auditEvent.SubjectId);
+    }
+
+    [Fact(DisplayName = "Semear service client existente - deve adicionar permissões ausentes sem trocar segredo")]
+    public async Task SeedAsync_ExistingClient_ShouldAddMissingPermissionsWithoutChangingSecret()
+    {
+        await using var context = CreateContext();
+        var passwordHasher = new PasswordHasher();
+        var existingClient = ServiceClient.Create(
+            "web-bff",
+            "Web BFF legado",
+            passwordHasher.HashSecret("ExistingSecret1!"),
+            true,
+            ["identity-api", "legacy-api"],
+            ["identity.users.create", "legacy.scope"],
+            NowUtc.AddDays(-1));
+        await context.ServiceClients.AddAsync(existingClient);
+        await context.SaveChangesAsync();
+
+        var options = ValidOptions();
+        options.Secret = null;
+        var seeder = CreateSeeder(context, options);
+
+        await seeder.SeedAsync(CancellationToken.None);
+        await seeder.SeedAsync(CancellationToken.None);
+
+        var client = Assert.Single(await context.ServiceClients
+            .Include(item => item.AllowedAudiences)
+            .Include(item => item.AllowedScopes)
+            .ToListAsync());
+        Assert.True(passwordHasher.Verify("ExistingSecret1!", client.SecretHash));
+        Assert.Contains(client.AllowedAudiences, item => item.Audience == "legacy-api");
+        Assert.Contains(client.AllowedAudiences, item => item.Audience == "web-bff");
+        Assert.Contains(client.AllowedScopes, item => item.Scope == "legacy.scope");
+        Assert.All(
+            options.AllowedScopes,
+            scope => Assert.Contains(client.AllowedScopes, item => item.Scope == scope));
+
+        var auditEvent = Assert.Single(await context.SecurityAuditEvents.ToListAsync());
+        Assert.Equal("service_client.permissions_changed", auditEvent.EventType);
         Assert.Equal("identity-migrations", auditEvent.ActorClientId);
         Assert.Equal("web-bff", auditEvent.SubjectId);
     }
@@ -80,7 +122,13 @@ public sealed class InitialServiceClientSeederTests
                 "identity.auth.login",
                 "identity.auth.refresh",
                 "identity.auth.revoke",
-                "identity.clients.write"
+                "identity.users.create",
+                "identity.users.read",
+                "identity.users.write",
+                "identity.clients.create",
+                "identity.clients.read",
+                "identity.clients.write",
+                "identity.audit.read"
             ]
         };
 
