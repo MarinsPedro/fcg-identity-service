@@ -4,6 +4,10 @@ namespace FiapCloudGames.Identity.Domain.Users;
 
 public sealed class User
 {
+    public const int NameMinimumLength = 2;
+    public const int NameMaximumLength = 120;
+    public const int PasswordHashMaximumLength = 500;
+
     private User() { }
 
     private User(
@@ -46,16 +50,23 @@ public sealed class User
 
     public void ChangeDetails(string name, Email email)
     {
-        Name = name?.Trim() is { Length: >= 2 and <= 120 } normalized
+        Name = name?.Trim() is
+        {
+            Length: >= NameMinimumLength and <= NameMaximumLength
+        } normalized
             ? normalized
-            : throw new DomainRuleViolationException("O nome deve ter entre 2 e 120 caracteres.");
+            : throw new DomainRuleViolationException(
+                $"O nome deve ter entre {NameMinimumLength} e {NameMaximumLength} caracteres.");
         Email = email ?? throw new DomainRuleViolationException("O e-mail é obrigatório.");
     }
 
     public void Deactivate() => IsActive = false;
 
     private static string ValidatePasswordHash(string? passwordHash) =>
-        passwordHash?.Trim() is { Length: > 0 } normalized
+        passwordHash?.Trim() is
+        {
+            Length: > 0 and <= PasswordHashMaximumLength
+        } normalized
             ? normalized
-            : throw new DomainRuleViolationException("O hash da senha é obrigatório.");
+            : throw new DomainRuleViolationException("O hash da senha é inválido.");
 }

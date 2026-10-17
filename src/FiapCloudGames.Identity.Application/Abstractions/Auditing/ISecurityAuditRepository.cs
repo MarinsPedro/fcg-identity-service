@@ -8,7 +8,8 @@ public interface ISecurityAuditRepository
         SecurityAuditEvent auditEvent,
         CancellationToken cancellationToken);
 
-    Task<IReadOnlyCollection<SecurityAuditEvent>> GetRecentAsync(
-        int take,
+    Task<IReadOnlyList<SecurityAuditEvent>> ListAsync(
+        SecurityAuditEventQuery query,
+        int limit,
         CancellationToken cancellationToken);
 }

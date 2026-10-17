@@ -21,6 +21,9 @@ UnitTests/
   Application/
     Auditing/
     Authentication/
+    Pagination/
+    Queries/
+    Validation/
     Users/
     ServiceClients/
   Domain/
@@ -93,6 +96,11 @@ migrations. Ela valida:
 - localização e descoberta das migrations;
 - ausência de divergência entre o modelo atual e o snapshot;
 - assembly correto de migrations.
+
+Consultas com paginação keyset devem validar também a tradução SQL do cursor
+com o provider Npgsql. Esse teste usa `ToQueryString()` e não abre conexão; ele
+protege comparações compostas que podem funcionar no banco em memória e falhar
+na tradução para PostgreSQL.
 
 Esses testes não abrem conexão com um PostgreSQL real. Um teste com banco real
 deve ser criado separadamente quando houver comportamento que dependa da

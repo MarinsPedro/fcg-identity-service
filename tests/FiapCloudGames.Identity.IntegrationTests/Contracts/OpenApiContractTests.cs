@@ -56,7 +56,8 @@ public sealed class OpenApiContractTests(IdentityApiFactory factory)
         Assert.True(paths.TryGetProperty(
             "/v1/service-clients/{clientId}/secret/rotate",
             out _));
-        Assert.True(paths.TryGetProperty("/v1/audit-events", out _));
+        Assert.True(paths.TryGetProperty("/v1/audit-events", out var auditEventsPath));
+        AssertAuditQueryConstraints(auditEventsPath.GetProperty("get"));
         Assert.True(paths.TryGetProperty("/.well-known/jwks.json", out _));
         Assert.False(paths.TryGetProperty("/api/auth/login", out _));
         Assert.False(paths.TryGetProperty("/api/v1/auth/login", out _));
@@ -73,5 +74,50 @@ public sealed class OpenApiContractTests(IdentityApiFactory factory)
             .GetProperty("components")
             .GetProperty("securitySchemes");
         Assert.True(securitySchemes.TryGetProperty("bearer", out _));
+    }
+
+    private static void AssertAuditQueryConstraints(JsonElement operation)
+    {
+        var parameters = operation
+            .GetProperty("parameters")
+            .EnumerateArray()
+            .ToDictionary(
+                parameter => parameter.GetProperty("name").GetString()!,
+                StringComparer.Ordinal);
+
+        var limitSchema = parameters["limit"].GetProperty("schema");
+        Assert.Equal(1, limitSchema.GetProperty("minimum").GetInt32());
+        Assert.Equal(200, limitSchema.GetProperty("maximum").GetInt32());
+        Assert.Equal(50, limitSchema.GetProperty("default").GetInt32());
+        Assert.Equal(
+            2048,
+            parameters["after"]
+                .GetProperty("schema")
+                .GetProperty("maxLength")
+                .GetInt32());
+        Assert.Equal(
+            100,
+            parameters["eventType"]
+                .GetProperty("schema")
+                .GetProperty("maxLength")
+                .GetInt32());
+        Assert.Equal(
+            100,
+            parameters["actorClientId"]
+                .GetProperty("schema")
+                .GetProperty("maxLength")
+                .GetInt32());
+        Assert.Equal(
+            50,
+            parameters["subjectType"]
+                .GetProperty("schema")
+                .GetProperty("maxLength")
+                .GetInt32());
+        Assert.Equal(
+            254,
+            parameters["subjectId"]
+                .GetProperty("schema")
+                .GetProperty("maxLength")
+                .GetInt32());
     }
 }

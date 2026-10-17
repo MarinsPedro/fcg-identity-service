@@ -172,6 +172,25 @@ public sealed class ArchitectureRulesTests
         Assert.Empty(violations);
     }
 
+    [Fact(DisplayName = "Nomear parâmetros de query - não deve declarar nomes manualmente nas propriedades")]
+    public void QueryProperties_DoNotDeclareManualNames()
+    {
+        var violations = typeof(IdentityPolicies).Assembly
+            .GetTypes()
+            .SelectMany(type => type.GetProperties())
+            .Select(property => new
+            {
+                Property = property,
+                Attribute = property.GetCustomAttribute<FromQueryAttribute>()
+            })
+            .Where(item => !string.IsNullOrWhiteSpace(item.Attribute?.Name))
+            .Select(item =>
+                $"{item.Property.DeclaringType?.FullName}.{item.Property.Name}")
+            .ToArray();
+
+        Assert.Empty(violations);
+    }
+
     [Fact(DisplayName = "Declarar migrations do EF - deve ocorrer somente no executável de migrations")]
     public void EfMigrations_LiveOnlyInMigrationsExecutable()
     {

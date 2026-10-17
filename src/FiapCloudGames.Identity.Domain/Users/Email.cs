@@ -7,6 +7,8 @@ namespace FiapCloudGames.Identity.Domain.Users;
 
 public sealed record Email
 {
+    public const int MaximumLength = 254;
+
     private Email(string value) => Value = value;
 
     public string Value { get; }
@@ -32,7 +34,7 @@ public sealed record Email
         }
 
         var normalized = value.Trim().ToLowerInvariant();
-        if (normalized.Length > 254 ||
+        if (normalized.Length > MaximumLength ||
             !MailAddress.TryCreate(normalized, out var address) ||
             !string.Equals(address.Address, normalized, StringComparison.OrdinalIgnoreCase))
         {

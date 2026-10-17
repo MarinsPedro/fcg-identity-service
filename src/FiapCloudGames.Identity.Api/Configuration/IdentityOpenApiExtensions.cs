@@ -23,6 +23,7 @@ internal static class IdentityOpenApiExtensions
             var presentationAssembly = typeof(DependencyInjection).Assembly;
             var xmlFile = $"{presentationAssembly.GetName().Name}.xml";
             options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFile));
+            options.OperationFilter<CamelCaseQueryParameterOperationFilter>();
 
             options.AddSecurityDefinition(
                 "bearer",

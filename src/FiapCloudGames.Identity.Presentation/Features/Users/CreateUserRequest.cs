@@ -1,4 +1,6 @@
 using System.ComponentModel.DataAnnotations;
+using FiapCloudGames.Identity.Application.Features.Users;
+using FiapCloudGames.Identity.Presentation.Validation;
 
 namespace FiapCloudGames.Identity.Presentation.Features.Users;
 
@@ -9,6 +11,13 @@ namespace FiapCloudGames.Identity.Presentation.Features.Users;
 /// <param name="Email">Endereço de e-mail do usuário.</param>
 /// <param name="Password">Senha inicial do usuário.</param>
 public sealed record CreateUserRequest(
-    [Required, StringLength(120, MinimumLength = 2)] string Name,
-    [Required, EmailAddress, StringLength(254)] string Email,
-    [Required, MinLength(8)] string Password);
+    [Required]
+    [ApiStringLength(
+        UserInputConstraints.NameMaximumLength,
+        MinimumLength = UserInputConstraints.NameMinimumLength)]
+    string Name,
+    [Required, EmailAddress]
+    [ApiStringLength(UserInputConstraints.EmailMaximumLength)]
+    string Email,
+    [Required, MinLength(UserInputConstraints.PasswordMinimumLength)]
+    string Password);

@@ -1,6 +1,8 @@
+using System.Text.Json;
 using FiapCloudGames.BuildingBlocks.Authentication;
 using FiapCloudGames.Identity.Presentation.Authorization;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace FiapCloudGames.Identity.Presentation;
@@ -18,7 +20,10 @@ public static class DependencyInjection
     public static IServiceCollection AddIdentityPresentation(this IServiceCollection services)
     {
         services
-            .AddControllers()
+            .AddControllers(options =>
+                options.ModelMetadataDetailsProviders.Add(
+                    new SystemTextJsonValidationMetadataProvider(
+                        JsonNamingPolicy.CamelCase)))
             .AddApplicationPart(typeof(DependencyInjection).Assembly);
 
         services.AddAuthorization(options =>

@@ -118,7 +118,10 @@ As propriedades usam `PascalCase` e nomes relacionados ao domínio:
 | `Audience` | audiência solicitada para um token de serviço |
 | `ScopeCount` | quantidade de scopes solicitados, sem registrar credenciais |
 | `AuditEventLimit` | limite solicitado na consulta de auditoria |
+| `AuditFilterCount` | quantidade de filtros aplicados à consulta |
+| `AuditHasCursor` | indica se a consulta continuou a partir de um cursor |
 | `AuditEventCount` | quantidade de eventos retornados |
+| `AuditHasNextPage` | indica se a consulta retornou cursor para outra página |
 | `MigrationCount` | quantidade de migrations pendentes |
 | `Method` | método HTTP |
 | `Path` | caminho da requisição, sem query string |
@@ -236,7 +239,7 @@ As seguintes operações criam um registro em
 Cada registro contém `EventType`, `ActorClientId`, `SubjectType`, `SubjectId` e
 `OccurredAtUtc`. Ele não contém segredo, hash ou JWT. A consulta é feita por
 `GET /v1/audit-events`, exige token de serviço com o scope
-`identity.audit.read` e aceita `take` entre 1 e 200.
+`identity.audit.read` e usa paginação por cursor com `limit` entre 1 e 200.
 
 Logs não substituem essa auditoria, e a auditoria não substitui logs de falhas,
 latência e diagnóstico técnico.

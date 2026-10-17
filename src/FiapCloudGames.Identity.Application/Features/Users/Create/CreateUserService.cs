@@ -1,6 +1,7 @@
 using FiapCloudGames.BuildingBlocks.Exceptions;
 using FiapCloudGames.Identity.Application.Abstractions.Security;
 using FiapCloudGames.Identity.Application.Abstractions.Persistence;
+using FiapCloudGames.Identity.Application.Validation;
 using FiapCloudGames.Identity.Domain.Users;
 using Microsoft.Extensions.Logging;
 
@@ -22,19 +23,36 @@ public sealed class CreateUserService(
         if (!Email.TryCreate(input.Email, out var email))
         {
             throw AppException.Validation(
-                [new AppError("O e-mail informado é inválido.", "email")]);
+                [
+                    new AppError(
+                        "O e-mail informado é inválido.",
+                        InputFieldName.From(nameof(CreateUserInput.Email)))
+                ]);
         }
 
-        if (input.Name?.Trim() is not { Length: >= 2 and <= 120 })
+        if (input.Name?.Trim() is not
+            {
+                Length: >= UserInputConstraints.NameMinimumLength and
+                    <= UserInputConstraints.NameMaximumLength
+            })
         {
             throw AppException.Validation(
-                [new AppError("O nome deve ter entre 2 e 120 caracteres.", "name")]);
+                [
+                    new AppError(
+                        $"O nome deve ter entre {UserInputConstraints.NameMinimumLength} e " +
+                        $"{UserInputConstraints.NameMaximumLength} caracteres.",
+                        InputFieldName.From(nameof(CreateUserInput.Name)))
+                ]);
         }
 
         var password = Password.TryCreate(input.Password, out var validPassword)
             ? validPassword
             : throw AppException.Validation(
-                [new AppError(Password.InvalidMessage, "password")]);
+                [
+                    new AppError(
+                        Password.InvalidMessage,
+                        InputFieldName.From(nameof(CreateUserInput.Password)))
+                ]);
 
         if (await users.EmailExistsAsync(email, null, cancellationToken))
         {

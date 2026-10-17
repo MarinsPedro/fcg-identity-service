@@ -65,6 +65,9 @@ Application/
     Auditing/
     Persistence/
     Security/
+  Pagination/
+  Queries/
+  Validation/
   Features/
     Authentication/
       Common/
@@ -103,6 +106,8 @@ As portas técnicas ficam em `Abstractions`:
 ```text
 Presentation/
   Authorization/
+  Pagination/
+  Validation/
   Features/
     Authentication/
     OAuth/
@@ -121,6 +126,31 @@ devolvem entidades de domínio diretamente.
 Requests, Responses e mappings permanecem próximos do Controller do recurso.
 Policies ficam em `Authorization`, evitando dependências circulares entre
 features.
+
+Requests não repetem nomes de campos em `FromQuery` ou mensagens de validação.
+O binding HTTP é case-insensitive, um filtro global publica queries em camelCase
+no OpenAPI e `ApiStringLength`/`ApiIntegerRange` derivam a mensagem do nome da
+propriedade. Limites compartilhados vêm da Application e, quando representam
+uma invariante, têm sua origem no Domain. Na Application, nomes de campos usam
+`nameof` com `InputFieldName`, nunca strings duplicadas.
+
+## Paginação por cursor
+
+Consultas sobre coleções mutáveis usam o padrão compartilhado de paginação por
+cursor. A Presentation possui `CursorQueryRequest`, `CursorPageResponse<T>` e o
+codec versionado do token; a Application possui
+`CursorPagination` e `CursorPageResult<TItem, TCursor>`. Validações comuns de
+filtros textuais, datas UTC e períodos ficam em `QueryValidation`. Cada feature
+define apenas o cursor tipado que representa sua ordenação estável e os filtros
+próprios do recurso.
+
+O cursor nunca atravessa a Application como Base64 ou JSON. A Presentation
+decodifica `after` para um tipo conhecido, a Application valida a posição e a
+Infrastructure aplica keyset pagination. Isso mantém HTTP fora do caso de uso e
+permite que novos endpoints reutilizem o contrato sem compartilhar detalhes da
+auditoria.
+
+As regras completas para novos endpoints estão em [pagination.md](pagination.md).
 
 ## Infrastructure e EF Core
 
@@ -191,6 +221,8 @@ antes da API. Em produção, execute-o como uma etapa ou Job anterior ao rollout
 | repository concreto | `Infrastructure/Persistence/Repositories` |
 | migration, snapshot ou seed inicial | `Migrations` |
 | rota, Request, Response ou mapping HTTP | `Presentation/Features/<Recurso>` |
+| contrato compartilhado de paginação HTTP | `Presentation/Pagination` |
+| resultado compartilhado de paginação | `Application/Pagination` |
 | configuração final e pipeline | `Api/Program.cs` |
 | regra estrutural | `ArchitectureTests` |
 

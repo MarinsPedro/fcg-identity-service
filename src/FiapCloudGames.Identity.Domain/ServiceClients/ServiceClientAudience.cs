@@ -4,12 +4,20 @@ namespace FiapCloudGames.Identity.Domain.ServiceClients;
 
 public sealed class ServiceClientAudience
 {
+    public const int AudienceMaximumLength = 200;
+
     private ServiceClientAudience() { }
 
     private ServiceClientAudience(string clientId, string audience)
     {
-        ClientId = NormalizeRequired(clientId, 100, "client_id");
-        Audience = NormalizeRequired(audience, 200, "audience");
+        ClientId = NormalizeRequired(
+            clientId,
+            ServiceClient.ClientIdMaximumLength,
+            "client_id");
+        Audience = NormalizeRequired(
+            audience,
+            AudienceMaximumLength,
+            "audience");
     }
 
     public string ClientId { get; private set; } = string.Empty;

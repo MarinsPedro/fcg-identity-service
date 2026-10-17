@@ -4,6 +4,11 @@ namespace FiapCloudGames.Identity.Domain.Auditing;
 
 public sealed class SecurityAuditEvent
 {
+    public const int EventTypeMaximumLength = 100;
+    public const int ActorClientIdMaximumLength = 100;
+    public const int SubjectTypeMaximumLength = 50;
+    public const int SubjectIdMaximumLength = 254;
+
     private SecurityAuditEvent() { }
 
     private SecurityAuditEvent(
@@ -18,10 +23,22 @@ public sealed class SecurityAuditEvent
             ? id
             : throw new DomainRuleViolationException(
                 "O identificador do evento de auditoria é obrigatório.");
-        EventType = NormalizeRequired(eventType, 100, "tipo do evento");
-        ActorClientId = NormalizeRequired(actorClientId, 100, "client autor");
-        SubjectType = NormalizeRequired(subjectType, 50, "tipo do objeto");
-        SubjectId = NormalizeRequired(subjectId, 254, "objeto");
+        EventType = NormalizeRequired(
+            eventType,
+            EventTypeMaximumLength,
+            "tipo do evento");
+        ActorClientId = NormalizeRequired(
+            actorClientId,
+            ActorClientIdMaximumLength,
+            "client autor");
+        SubjectType = NormalizeRequired(
+            subjectType,
+            SubjectTypeMaximumLength,
+            "tipo do objeto");
+        SubjectId = NormalizeRequired(
+            subjectId,
+            SubjectIdMaximumLength,
+            "objeto");
         OccurredAtUtc = occurredAtUtc != default && occurredAtUtc.Offset == TimeSpan.Zero
             ? occurredAtUtc
             : throw new DomainRuleViolationException(

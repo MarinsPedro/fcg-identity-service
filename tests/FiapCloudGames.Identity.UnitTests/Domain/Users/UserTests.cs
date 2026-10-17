@@ -37,6 +37,17 @@ public sealed class UserTests
         Assert.Equal("A data de criação deve estar em UTC.", exception.Message);
     }
 
+    [Fact(DisplayName = "Criar usuário - deve rejeitar hash de senha acima do limite")]
+    public void Create_WithOversizedPasswordHash_RejectsInvalidState()
+    {
+        Assert.Throws<DomainRuleViolationException>(() =>
+            User.Create(
+                "Aluno FIAP",
+                Email.Create("aluno@fiap.com.br"),
+                new string('a', User.PasswordHashMaximumLength + 1),
+                IdentityTestData.NowUtc));
+    }
+
     [Fact(DisplayName = "Desativar usuário - deve alterar o estado para inativo")]
     public void Deactivate_WhenActive_ChangesStateToInactive()
     {

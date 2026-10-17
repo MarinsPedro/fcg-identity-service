@@ -15,9 +15,9 @@ internal sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<Refre
         builder.Property(token => token.Id).HasColumnName("id").ValueGeneratedNever();
         builder.Property(token => token.UserId).HasColumnName("user_id").IsRequired();
         builder.Property(token => token.ClientId).HasColumnName("client_id")
-            .HasMaxLength(100).IsRequired();
+            .HasMaxLength(ServiceClient.ClientIdMaximumLength).IsRequired();
         builder.Property(token => token.TokenHash).HasColumnName("token_hash")
-            .HasMaxLength(64).IsRequired();
+            .HasMaxLength(RefreshToken.TokenHashMaximumLength).IsRequired();
         builder.HasIndex(token => token.TokenHash).IsUnique();
         builder.Property(token => token.CreatedAtUtc).HasColumnName("created_at_utc").IsRequired();
         builder.Property(token => token.ExpiresAtUtc).HasColumnName("expires_at_utc").IsRequired();

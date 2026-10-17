@@ -23,7 +23,128 @@ namespace FiapCloudGames.Identity.Migrations.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("FiapCloudGames.Identity.Domain.Entities.RefreshToken", b =>
+            modelBuilder.Entity("FiapCloudGames.Identity.Domain.Auditing.SecurityAuditEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ActorClientId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("actor_client_id");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("event_type");
+
+                    b.Property<DateTimeOffset>("OccurredAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at_utc");
+
+                    b.Property<string>("SubjectId")
+                        .IsRequired()
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)")
+                        .HasColumnName("subject_id");
+
+                    b.Property<string>("SubjectType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("subject_type");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OccurredAtUtc", "Id");
+
+                    b.HasIndex("ActorClientId", "OccurredAtUtc", "Id");
+
+                    b.HasIndex("EventType", "OccurredAtUtc", "Id");
+
+                    b.HasIndex("SubjectType", "SubjectId", "OccurredAtUtc", "Id");
+
+                    b.ToTable("security_audit_events", "identity");
+                });
+
+            modelBuilder.Entity("FiapCloudGames.Identity.Domain.ServiceClients.ServiceClient", b =>
+                {
+                    b.Property<string>("ClientId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("client_id");
+
+                    b.Property<bool>("CanIssueUserTokens")
+                        .HasColumnType("boolean")
+                        .HasColumnName("can_issue_user_tokens");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("display_name");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("SecretHash")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("secret_hash");
+
+                    b.HasKey("ClientId");
+
+                    b.ToTable("service_clients", "identity");
+                });
+
+            modelBuilder.Entity("FiapCloudGames.Identity.Domain.ServiceClients.ServiceClientAudience", b =>
+                {
+                    b.Property<string>("ClientId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("client_id");
+
+                    b.Property<string>("Audience")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("audience");
+
+                    b.HasKey("ClientId", "Audience");
+
+                    b.HasIndex("Audience");
+
+                    b.ToTable("service_client_audiences", "identity");
+                });
+
+            modelBuilder.Entity("FiapCloudGames.Identity.Domain.ServiceClients.ServiceClientScope", b =>
+                {
+                    b.Property<string>("ClientId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("client_id");
+
+                    b.Property<string>("Scope")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("scope");
+
+                    b.HasKey("ClientId", "Scope");
+
+                    b.HasIndex("Scope");
+
+                    b.ToTable("service_client_scopes", "identity");
+                });
+
+            modelBuilder.Entity("FiapCloudGames.Identity.Domain.Sessions.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
@@ -74,124 +195,7 @@ namespace FiapCloudGames.Identity.Migrations.Migrations
                     b.ToTable("refresh_tokens", "identity");
                 });
 
-            modelBuilder.Entity("FiapCloudGames.Identity.Domain.Entities.SecurityAuditEvent", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("ActorClientId")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("actor_client_id");
-
-                    b.Property<string>("EventType")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("event_type");
-
-                    b.Property<DateTimeOffset>("OccurredAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("occurred_at_utc");
-
-                    b.Property<string>("SubjectId")
-                        .IsRequired()
-                        .HasMaxLength(254)
-                        .HasColumnType("character varying(254)")
-                        .HasColumnName("subject_id");
-
-                    b.Property<string>("SubjectType")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("subject_type");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("OccurredAtUtc");
-
-                    b.HasIndex("SubjectType", "SubjectId");
-
-                    b.ToTable("security_audit_events", "identity");
-                });
-
-            modelBuilder.Entity("FiapCloudGames.Identity.Domain.Entities.ServiceClient", b =>
-                {
-                    b.Property<string>("ClientId")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("client_id");
-
-                    b.Property<bool>("CanIssueUserTokens")
-                        .HasColumnType("boolean")
-                        .HasColumnName("can_issue_user_tokens");
-
-                    b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at_utc");
-
-                    b.Property<string>("DisplayName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("display_name");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_active");
-
-                    b.Property<string>("SecretHash")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("secret_hash");
-
-                    b.HasKey("ClientId");
-
-                    b.ToTable("service_clients", "identity");
-                });
-
-            modelBuilder.Entity("FiapCloudGames.Identity.Domain.Entities.ServiceClientAudience", b =>
-                {
-                    b.Property<string>("ClientId")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("client_id");
-
-                    b.Property<string>("Audience")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("audience");
-
-                    b.HasKey("ClientId", "Audience");
-
-                    b.HasIndex("Audience");
-
-                    b.ToTable("service_client_audiences", "identity");
-                });
-
-            modelBuilder.Entity("FiapCloudGames.Identity.Domain.Entities.ServiceClientScope", b =>
-                {
-                    b.Property<string>("ClientId")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("client_id");
-
-                    b.Property<string>("Scope")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("scope");
-
-                    b.HasKey("ClientId", "Scope");
-
-                    b.HasIndex("Scope");
-
-                    b.ToTable("service_client_scopes", "identity");
-                });
-
-            modelBuilder.Entity("FiapCloudGames.Identity.Domain.Entities.User", b =>
+            modelBuilder.Entity("FiapCloudGames.Identity.Domain.Users.User", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
@@ -237,40 +241,40 @@ namespace FiapCloudGames.Identity.Migrations.Migrations
                     b.ToTable("users", "identity");
                 });
 
-            modelBuilder.Entity("FiapCloudGames.Identity.Domain.Entities.RefreshToken", b =>
+            modelBuilder.Entity("FiapCloudGames.Identity.Domain.ServiceClients.ServiceClientAudience", b =>
                 {
-                    b.HasOne("FiapCloudGames.Identity.Domain.Entities.ServiceClient", null)
-                        .WithMany()
-                        .HasForeignKey("ClientId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("FiapCloudGames.Identity.Domain.Entities.User", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("FiapCloudGames.Identity.Domain.Entities.ServiceClientAudience", b =>
-                {
-                    b.HasOne("FiapCloudGames.Identity.Domain.Entities.ServiceClient", null)
+                    b.HasOne("FiapCloudGames.Identity.Domain.ServiceClients.ServiceClient", null)
                         .WithMany("AllowedAudiences")
                         .HasForeignKey("ClientId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("FiapCloudGames.Identity.Domain.Entities.ServiceClientScope", b =>
+            modelBuilder.Entity("FiapCloudGames.Identity.Domain.ServiceClients.ServiceClientScope", b =>
                 {
-                    b.HasOne("FiapCloudGames.Identity.Domain.Entities.ServiceClient", null)
+                    b.HasOne("FiapCloudGames.Identity.Domain.ServiceClients.ServiceClient", null)
                         .WithMany("AllowedScopes")
                         .HasForeignKey("ClientId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("FiapCloudGames.Identity.Domain.Entities.ServiceClient", b =>
+            modelBuilder.Entity("FiapCloudGames.Identity.Domain.Sessions.RefreshToken", b =>
+                {
+                    b.HasOne("FiapCloudGames.Identity.Domain.ServiceClients.ServiceClient", null)
+                        .WithMany()
+                        .HasForeignKey("ClientId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("FiapCloudGames.Identity.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("FiapCloudGames.Identity.Domain.ServiceClients.ServiceClient", b =>
                 {
                     b.Navigation("AllowedAudiences");
 

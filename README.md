@@ -24,7 +24,7 @@ O Identity **não** decide se o usuário pode comprar um jogo, visualizar um ped
 ### Token de usuário
 
 1. O cliente envia as credenciais ao BFF ou API Gateway.
-2. A ponta chama `POST /api/auth/login` usando seu próprio `client_id` e segredo.
+2. A ponta chama `POST /v1/auth/login` usando seu token de serviço.
 3. O Identity valida aplicação, usuário e senha.
 4. O Identity devolve um JWT com `token_use=user`, `sub` igual ao ID do usuário e `client_id` igual à ponta solicitante.
 5. O token permanece na borda. Ao chamar APIs internas, a ponta usa um token de serviço e envia o ID do usuário no contrato da operação quando a regra exigir esse contexto.
@@ -58,6 +58,7 @@ docs/
   configuration.md
   endpoints.md
   logging-monitoring.md
+  pagination.md
   service-authentication-flows.md
   testing.md
 ```
@@ -71,6 +72,8 @@ Os fluxos completos de autenticação entre BFF, APIs e serviços internos estã
 em [docs/service-authentication-flows.md](docs/service-authentication-flows.md).
 A configuração de logs, correlação, auditoria e health checks está em
 [docs/logging-monitoring.md](docs/logging-monitoring.md).
+O contrato reutilizável de paginação por cursor está em
+[docs/pagination.md](docs/pagination.md).
 
 ## Pré-requisitos
 

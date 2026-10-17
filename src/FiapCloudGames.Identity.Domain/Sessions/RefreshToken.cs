@@ -1,9 +1,12 @@
 using FiapCloudGames.Identity.Domain.Common;
+using FiapCloudGames.Identity.Domain.ServiceClients;
 
 namespace FiapCloudGames.Identity.Domain.Sessions;
 
 public sealed class RefreshToken
 {
+    public const int TokenHashMaximumLength = 64;
+
     private RefreshToken() { }
 
     private RefreshToken(
@@ -22,8 +25,14 @@ public sealed class RefreshToken
             ? userId
             : throw new DomainRuleViolationException(
                 "O identificador do usuário é obrigatório.");
-        ClientId = NormalizeRequired(clientId, 100, "client_id");
-        TokenHash = NormalizeRequired(tokenHash, 64, "hash do refresh token");
+        ClientId = NormalizeRequired(
+            clientId,
+            ServiceClient.ClientIdMaximumLength,
+            "client_id");
+        TokenHash = NormalizeRequired(
+            tokenHash,
+            TokenHashMaximumLength,
+            "hash do refresh token");
         CreatedAtUtc = ValidateUtc(createdAtUtc, "data de criação");
         ExpiresAtUtc = ValidateUtc(expiresAtUtc, "data de expiração");
         if (ExpiresAtUtc <= CreatedAtUtc)

@@ -10,11 +10,12 @@ internal sealed class ServiceClientConfiguration : IEntityTypeConfiguration<Serv
     {
         builder.ToTable("service_clients");
         builder.HasKey(client => client.ClientId);
-        builder.Property(client => client.ClientId).HasColumnName("client_id").HasMaxLength(100);
+        builder.Property(client => client.ClientId).HasColumnName("client_id")
+            .HasMaxLength(ServiceClient.ClientIdMaximumLength);
         builder.Property(client => client.DisplayName).HasColumnName("display_name")
-            .HasMaxLength(200).IsRequired();
+            .HasMaxLength(ServiceClient.DisplayNameMaximumLength).IsRequired();
         builder.Property(client => client.SecretHash).HasColumnName("secret_hash")
-            .HasMaxLength(500).IsRequired();
+            .HasMaxLength(ServiceClient.SecretHashMaximumLength).IsRequired();
         builder.Property(client => client.CanIssueUserTokens)
             .HasColumnName("can_issue_user_tokens").IsRequired();
         builder.Property(client => client.IsActive).HasColumnName("is_active").IsRequired();

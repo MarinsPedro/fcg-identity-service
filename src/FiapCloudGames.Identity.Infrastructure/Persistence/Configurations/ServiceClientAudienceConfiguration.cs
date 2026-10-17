@@ -12,9 +12,9 @@ internal sealed class ServiceClientAudienceConfiguration
         builder.ToTable("service_client_audiences");
         builder.HasKey(audience => new { audience.ClientId, audience.Audience });
         builder.Property(audience => audience.ClientId).HasColumnName("client_id")
-            .HasMaxLength(100);
+            .HasMaxLength(ServiceClient.ClientIdMaximumLength);
         builder.Property(audience => audience.Audience).HasColumnName("audience")
-            .HasMaxLength(200);
+            .HasMaxLength(ServiceClientAudience.AudienceMaximumLength);
         builder.HasIndex(audience => audience.Audience);
         builder.HasOne<ServiceClient>()
             .WithMany(client => client.AllowedAudiences)

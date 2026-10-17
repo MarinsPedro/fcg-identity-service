@@ -1,5 +1,6 @@
 using FiapCloudGames.Identity.Application.Features.Auditing.GetSecurityAuditEvents;
 using FiapCloudGames.Identity.Presentation.Authorization;
+using FiapCloudGames.Identity.Presentation.Pagination;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -14,23 +15,22 @@ namespace FiapCloudGames.Identity.Presentation.Features.Auditing;
 public sealed class SecurityAuditController : ControllerBase
 {
     /// <summary>
-    /// Lista os eventos de auditoria de segurança mais recentes.
+    /// Lista uma página de eventos de auditoria de segurança.
     /// </summary>
-    /// <param name="take">Quantidade máxima de eventos; o padrão é 100.</param>
+    /// <param name="request">Filtros, limite e cursor da consulta.</param>
     /// <param name="service">Serviço responsável pela consulta dos eventos.</param>
     /// <param name="cancellationToken">Token de cancelamento.</param>
-    /// <returns>Coleção dos eventos de auditoria encontrados.</returns>
+    /// <returns>Página de eventos e cursor para continuar a consulta.</returns>
     [Authorize(Policy = IdentityPolicies.AuditRead)]
     [HttpGet]
-    [ProducesResponseType<IReadOnlyCollection<SecurityAuditEventResponse>>(
+    [ProducesResponseType<CursorPageResponse<SecurityAuditEventResponse>>(
         StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyCollection<SecurityAuditEventResponse>>> GetAsync(
-        [FromQuery] int take,
+    public async Task<ActionResult<CursorPageResponse<SecurityAuditEventResponse>>> GetAsync(
+        [FromQuery] SecurityAuditEventsQueryRequest request,
         [FromServices] GetSecurityAuditEventsService service,
         CancellationToken cancellationToken)
     {
-        var normalizedTake = take == 0 ? 100 : take;
-        var events = await service.ExecuteAsync(normalizedTake, cancellationToken);
-        return Ok(events.Select(SecurityAuditEventResponse.From).ToArray());
+        var page = await service.ExecuteAsync(request.ToInput(), cancellationToken);
+        return Ok(page.ToResponse());
     }
 }

@@ -248,15 +248,61 @@ não pode desativar a própria credencial. Exige `identity.clients.write`.
 
 ### `GET /v1/audit-events`
 
-Retorna os eventos mais recentes de provisionamento e gerenciamento de service
-clients. O parâmetro `take` aceita de 1 a 200 e usa 100 quando omitido.
+Retorna os eventos de provisionamento e gerenciamento de service clients em
+páginas ordenadas por `occurredAtUtc DESC, id DESC`. Usa o padrão de paginação
+por cursor descrito em [pagination.md](pagination.md).
 
 ```http
-GET /v1/audit-events?take=50
+GET /v1/audit-events?subjectType=service_client&subjectId=orders-api&limit=50
 Authorization: Bearer <token-service>
 ```
 
-Exige `identity.audit.read`. Os eventos não contêm segredo, hash ou JWT.
+Parâmetros disponíveis:
+
+| Parâmetro | Regra |
+|---|---|
+| `eventType` | igualdade exata; máximo de 100 caracteres |
+| `actorClientId` | igualdade exata; máximo de 100 caracteres |
+| `subjectType` | igualdade exata; máximo de 50 caracteres |
+| `subjectId` | igualdade exata; máximo de 254 caracteres |
+| `occurredFromUtc` | início inclusivo do período, obrigatoriamente UTC |
+| `occurredToUtc` | fim inclusivo do período, obrigatoriamente UTC |
+| `limit` | tamanho da página; padrão 50, mínimo 1 e máximo 200 |
+| `after` | cursor opaco retornado em `nextCursor` pela página anterior |
+
+Resposta:
+
+```json
+{
+  "items": [
+    {
+      "id": "e8c1f16c-d657-44ef-bbab-e4295c82ba50",
+      "eventType": "service_client.created",
+      "actorClientId": "web-bff",
+      "subjectType": "service_client",
+      "subjectId": "orders-api",
+      "occurredAtUtc": "2026-10-17T12:00:00+00:00"
+    }
+  ],
+  "nextCursor": "eyJ2ZXJzaW9uIjoxLCJ2YWx1ZSI6Li4ufQ"
+}
+```
+
+Quando `nextCursor` não for `null`, envie o mesmo conjunto de filtros e use o
+valor em `after`:
+
+```http
+GET /v1/audit-events?subjectType=service_client&subjectId=orders-api&limit=50&after=<nextCursor>
+Authorization: Bearer <token-service>
+```
+
+Filtros são combinados com `AND`. `occurredFromUtc` não pode ser posterior a
+`occurredToUtc`; datas com offset diferente de zero e cursores inválidos
+retornam `400 Bad Request` em Problem Details. O cursor é opaco, versionado e
+não contém segredo, mas não deve ser interpretado nem fabricado pelo consumidor.
+
+O endpoint exige `identity.audit.read`. Os eventos não contêm segredo, hash ou
+JWT.
 
 ### `POST /v1/users`
 

@@ -4,12 +4,20 @@ namespace FiapCloudGames.Identity.Domain.ServiceClients;
 
 public sealed class ServiceClientScope
 {
+    public const int ScopeMaximumLength = 200;
+
     private ServiceClientScope() { }
 
     private ServiceClientScope(string clientId, string scope)
     {
-        ClientId = NormalizeRequired(clientId, 100, "client_id");
-        Scope = NormalizeRequired(scope, 200, "scope");
+        ClientId = NormalizeRequired(
+            clientId,
+            ServiceClient.ClientIdMaximumLength,
+            "client_id");
+        Scope = NormalizeRequired(
+            scope,
+            ScopeMaximumLength,
+            "scope");
     }
 
     public string ClientId { get; private set; } = string.Empty;

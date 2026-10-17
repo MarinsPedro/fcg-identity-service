@@ -4,6 +4,10 @@ namespace FiapCloudGames.Identity.Domain.ServiceClients;
 
 public sealed class ServiceClient
 {
+    public const int ClientIdMaximumLength = 100;
+    public const int DisplayNameMaximumLength = 200;
+    public const int SecretHashMaximumLength = 500;
+
     private readonly List<ServiceClientAudience> allowedAudiences = [];
     private readonly List<ServiceClientScope> allowedScopes = [];
 
@@ -18,9 +22,18 @@ public sealed class ServiceClient
         IEnumerable<string> allowedScopes,
         DateTimeOffset createdAtUtc)
     {
-        ClientId = NormalizeRequired(clientId, 100, "client_id");
-        DisplayName = NormalizeRequired(displayName, 200, "nome do client");
-        SecretHash = NormalizeRequired(secretHash, 500, "hash do segredo");
+        ClientId = NormalizeRequired(
+            clientId,
+            ClientIdMaximumLength,
+            "client_id");
+        DisplayName = NormalizeRequired(
+            displayName,
+            DisplayNameMaximumLength,
+            "nome do client");
+        SecretHash = NormalizeRequired(
+            secretHash,
+            SecretHashMaximumLength,
+            "hash do segredo");
         CanIssueUserTokens = canIssueUserTokens;
         AddAudiences(allowedAudiences);
         AddScopes(allowedScopes);
@@ -124,7 +137,10 @@ public sealed class ServiceClient
                 "Não é possível rotacionar o segredo de um client inativo.");
         }
 
-        SecretHash = NormalizeRequired(secretHash, 500, "hash do segredo");
+        SecretHash = NormalizeRequired(
+            secretHash,
+            SecretHashMaximumLength,
+            "hash do segredo");
     }
 
     public void Deactivate()

@@ -121,8 +121,9 @@ internal sealed class FakeServiceClientRepository : IServiceClientRepository
 internal sealed class FakeSecurityAuditRepository : ISecurityAuditRepository
 {
     internal List<SecurityAuditEvent> AddedEvents { get; } = [];
-    internal IReadOnlyCollection<SecurityAuditEvent> RecentEvents { get; set; } = [];
-    internal int? RequestedTake { get; private set; }
+    internal IReadOnlyList<SecurityAuditEvent> Events { get; set; } = [];
+    internal SecurityAuditEventQuery? RequestedQuery { get; private set; }
+    internal int? RequestedLimit { get; private set; }
 
     public Task AddAsync(
         SecurityAuditEvent auditEvent,
@@ -132,12 +133,14 @@ internal sealed class FakeSecurityAuditRepository : ISecurityAuditRepository
         return Task.CompletedTask;
     }
 
-    public Task<IReadOnlyCollection<SecurityAuditEvent>> GetRecentAsync(
-        int take,
+    public Task<IReadOnlyList<SecurityAuditEvent>> ListAsync(
+        SecurityAuditEventQuery query,
+        int limit,
         CancellationToken cancellationToken)
     {
-        RequestedTake = take;
-        return Task.FromResult(RecentEvents);
+        RequestedQuery = query;
+        RequestedLimit = limit;
+        return Task.FromResult(Events);
     }
 }
 

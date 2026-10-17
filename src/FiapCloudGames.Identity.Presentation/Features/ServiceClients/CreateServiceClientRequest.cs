@@ -1,4 +1,6 @@
 using System.ComponentModel.DataAnnotations;
+using FiapCloudGames.Identity.Application.Features.ServiceClients;
+using FiapCloudGames.Identity.Presentation.Validation;
 
 namespace FiapCloudGames.Identity.Presentation.Features.ServiceClients;
 
@@ -11,8 +13,12 @@ namespace FiapCloudGames.Identity.Presentation.Features.ServiceClients;
 /// <param name="AllowedAudiences">Audiences para as quais o client pode solicitar tokens.</param>
 /// <param name="AllowedScopes">Scopes que o client pode solicitar.</param>
 public sealed record CreateServiceClientRequest(
-    [Required, StringLength(100)] string ClientId,
-    [Required, StringLength(200)] string DisplayName,
+    [Required]
+    [ApiStringLength(ServiceClientInputConstraints.ClientIdMaximumLength)]
+    string ClientId,
+    [Required]
+    [ApiStringLength(ServiceClientInputConstraints.DisplayNameMaximumLength)]
+    string DisplayName,
     bool CanIssueUserTokens,
     [Required, MinLength(1)] string[] AllowedAudiences,
     [Required, MinLength(1)] string[] AllowedScopes);
