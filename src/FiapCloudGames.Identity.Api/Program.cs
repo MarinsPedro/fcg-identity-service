@@ -1,4 +1,4 @@
-using FiapCloudGames.BuildingBlocks.Hosting;
+﻿using FiapCloudGames.BuildingBlocks.Hosting;
 using FiapCloudGames.BuildingBlocks.Web;
 using FiapCloudGames.Identity.Api.Configuration;
 using FiapCloudGames.Identity.Infrastructure;
@@ -30,4 +30,7 @@ app.MapControllers();
 
 await app.RunAsync();
 
-public partial class Program;
+public partial class Program
+{
+    protected Program() { }
+}
