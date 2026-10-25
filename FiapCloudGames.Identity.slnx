@@ -2,6 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/FiapCloudGames.Identity.Api/FiapCloudGames.Identity.Api.csproj" />
     <Project Path="src/FiapCloudGames.Identity.Application/FiapCloudGames.Identity.Application.csproj" />
+    <Project Path="src/FiapCloudGames.Identity.Contracts/FiapCloudGames.Identity.Contracts.csproj" />
     <Project Path="src/FiapCloudGames.Identity.Domain/FiapCloudGames.Identity.Domain.csproj" />
     <Project Path="src/FiapCloudGames.Identity.Infrastructure/FiapCloudGames.Identity.Infrastructure.csproj" />
     <Project Path="src/FiapCloudGames.Identity.Presentation/FiapCloudGames.Identity.Presentation.csproj" />

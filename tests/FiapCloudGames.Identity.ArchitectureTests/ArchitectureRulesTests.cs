@@ -15,8 +15,9 @@ public sealed class ArchitectureRulesTests
     public void ProjectReferences_FollowCleanArchitectureDirection()
     {
         AssertProjectReferences("Domain");
-        AssertProjectReferences("Application", "Domain");
-        AssertProjectReferences("Infrastructure", "Application", "Domain");
+        AssertProjectReferences("Application", "Contracts", "Domain");
+        AssertProjectReferences("Contracts");
+        AssertProjectReferences("Infrastructure", "Application", "Contracts", "Domain");
         AssertProjectReferences("Presentation", "Application");
         AssertProjectReferences("Api", "Infrastructure", "Presentation");
         AssertProjectReferences("Migrations", "Infrastructure");

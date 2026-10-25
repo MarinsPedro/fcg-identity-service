@@ -1,13 +1,16 @@
 using FiapCloudGames.BuildingBlocks.Authentication;
 using FiapCloudGames.Identity.Application;
 using FiapCloudGames.Identity.Application.Abstractions.Auditing;
+using FiapCloudGames.Identity.Application.Abstractions.Messaging;
 using FiapCloudGames.Identity.Application.Abstractions.Persistence;
 using FiapCloudGames.Identity.Application.Abstractions.Security;
+using FiapCloudGames.Identity.Contracts.Events.V1;
 using FiapCloudGames.Identity.Domain.ServiceClients;
 using FiapCloudGames.Identity.Domain.Sessions;
 using FiapCloudGames.Identity.Domain.Users;
 using FiapCloudGames.Identity.Infrastructure.Authentication;
 using FiapCloudGames.Identity.Infrastructure.Health;
+using FiapCloudGames.Identity.Infrastructure.Messaging;
 using FiapCloudGames.Identity.Infrastructure.Persistence;
 using FiapCloudGames.Identity.Infrastructure.Persistence.Repositories;
 using FiapCloudGames.Identity.Infrastructure.Security;
@@ -17,6 +20,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using MassTransit;
 
 namespace FiapCloudGames.Identity.Infrastructure;
 
@@ -29,6 +33,8 @@ public static class DependencyInjection
         var connectionString = configuration.GetConnectionString("Database")
             ?? throw new InvalidOperationException(
                 "A connection string 'Database' não foi configurada.");
+        var useInMemoryMessaging = configuration.GetValue<bool>(
+            "Messaging:UseInMemory");
 
         services.AddIdentityApplication();
         services
@@ -48,8 +54,63 @@ public static class DependencyInjection
             .ValidateOnStart();
         services.AddDbContext<IdentityDbContext>(options =>
             options.UseNpgsql(connectionString));
+        services
+            .AddOptions<RabbitMqOptions>()
+            .Bind(configuration.GetSection(RabbitMqOptions.SectionName))
+            .Validate(
+                options => useInMemoryMessaging ||
+                    !string.IsNullOrWhiteSpace(options.Host),
+                "RabbitMq:Host é obrigatório.")
+            .Validate(
+                options => useInMemoryMessaging || options.Port > 0,
+                "RabbitMq:Port deve ser maior que zero.")
+            .Validate(
+                options => useInMemoryMessaging ||
+                    !string.IsNullOrWhiteSpace(options.VirtualHost),
+                "RabbitMq:VirtualHost é obrigatório.")
+            .Validate(
+                options => useInMemoryMessaging ||
+                    !string.IsNullOrWhiteSpace(options.Username),
+                "RabbitMq:Username é obrigatório.")
+            .Validate(
+                options => useInMemoryMessaging ||
+                    !string.IsNullOrWhiteSpace(options.Password),
+                "RabbitMq:Password é obrigatório.")
+            .ValidateOnStart();
+        services.AddMassTransit(configurator =>
+        {
+            if (useInMemoryMessaging)
+            {
+                configurator.UsingInMemory();
+                return;
+            }
+
+            configurator.AddEntityFrameworkOutbox<IdentityDbContext>(outbox =>
+            {
+                outbox.UsePostgres();
+                outbox.UseBusOutbox();
+            });
+            configurator.UsingRabbitMq((context, rabbitMq) =>
+            {
+                rabbitMq.Message<UserCreatedEvent>(topology =>
+                    topology.SetEntityName(UserCreatedEvent.ExchangeName));
+
+                var options = context.GetRequiredService<
+                    Microsoft.Extensions.Options.IOptions<RabbitMqOptions>>().Value;
+                rabbitMq.Host(
+                    options.Host,
+                    options.Port,
+                    options.VirtualHost,
+                    host =>
+                    {
+                        host.Username(options.Username);
+                        host.Password(options.Password);
+                    });
+            });
+        });
         services.AddScoped<IIdentityUnitOfWork>(provider =>
             provider.GetRequiredService<IdentityDbContext>());
+        services.AddScoped<IIntegrationEventPublisher, MassTransitIntegrationEventPublisher>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IServiceClientRepository, ServiceClientRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();

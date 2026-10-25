@@ -1,10 +1,12 @@
 using FiapCloudGames.Identity.Application.Abstractions.Auditing;
+using FiapCloudGames.Identity.Application.Abstractions.Messaging;
 using FiapCloudGames.Identity.Application.Abstractions.Persistence;
 using FiapCloudGames.Identity.Application.Abstractions.Security;
 using FiapCloudGames.Identity.Domain.Auditing;
 using FiapCloudGames.Identity.Domain.ServiceClients;
 using FiapCloudGames.Identity.Domain.Sessions;
 using FiapCloudGames.Identity.Domain.Users;
+using FiapCloudGames.Identity.Contracts;
 
 namespace FiapCloudGames.Identity.UnitTests.Support;
 
@@ -175,6 +177,20 @@ internal sealed class SpyIdentityUnitOfWork : IIdentityUnitOfWork
     {
         SaveChangesCount++;
         return Task.FromResult(1);
+    }
+}
+
+internal sealed class SpyIntegrationEventPublisher : IIntegrationEventPublisher
+{
+    internal List<IIntegrationEvent> PublishedEvents { get; } = [];
+
+    public Task PublishAsync<T>(
+        T integrationEvent,
+        CancellationToken cancellationToken)
+        where T : class, IIntegrationEvent
+    {
+        PublishedEvents.Add(integrationEvent);
+        return Task.CompletedTask;
     }
 }
 

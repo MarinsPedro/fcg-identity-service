@@ -1,12 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="../FiapCloudGames.Identity.Application/FiapCloudGames.Identity.Application.csproj" />
+    <ProjectReference Include="../FiapCloudGames.Identity.Contracts/FiapCloudGames.Identity.Contracts.csproj" />
     <ProjectReference Include="../FiapCloudGames.Identity.Domain/FiapCloudGames.Identity.Domain.csproj" />
     <ProjectReference Include="$(LocalBuildingBlocksProject)" Condition="'$(UseLocalBuildingBlocks)' == 'true'" />
     <PackageReference Include="FiapCloudGames.BuildingBlocks" Condition="'$(UseLocalBuildingBlocks)' != 'true'" />
+    <PackageReference Include="MassTransit.EntityFrameworkCore" />
+    <PackageReference Include="MassTransit.RabbitMQ" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="RabbitMQ.Client" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="FiapCloudGames.Identity.Migrations" />

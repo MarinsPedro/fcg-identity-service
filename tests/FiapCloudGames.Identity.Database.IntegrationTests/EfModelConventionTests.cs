@@ -32,18 +32,22 @@ public sealed class EfModelConventionTests
         }
     }
 
-    [Fact(DisplayName = "Mapear entidades - deve definir chaves primárias e pertencer ao domínio Identity")]
-    public void Entities_ShouldHavePrimaryKeysAndBelongToIdentityDomain()
+    [Fact(DisplayName = "Mapear entidades - deve definir chaves primárias e ter origem conhecida")]
+    public void Entities_ShouldHavePrimaryKeysAndBelongToKnownNamespaces()
     {
         using var context = IdentityDbContextTestFactory.Create();
 
         foreach (var entity in context.Model.GetEntityTypes())
         {
             Assert.NotNull(entity.FindPrimaryKey());
-            Assert.StartsWith(
-                "FiapCloudGames.Identity.Domain",
-                entity.ClrType.Namespace,
-                StringComparison.Ordinal);
+            Assert.True(
+                entity.ClrType.Namespace?.StartsWith(
+                    "FiapCloudGames.Identity.Domain",
+                    StringComparison.Ordinal) == true ||
+                entity.ClrType.Namespace?.StartsWith(
+                    "MassTransit",
+                    StringComparison.Ordinal) == true,
+                $"A entidade '{entity.ClrType.FullName}' não pertence ao domínio nem ao outbox.");
         }
     }
 
