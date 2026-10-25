@@ -31,6 +31,7 @@ public sealed class IdentityApiFactory : WebApplicationFactory<Program>
         builder.UseSetting("Jwt:Issuer", "identity-integration-tests");
         builder.UseSetting("Jwt:PrivateKeyPath", string.Empty);
         builder.UseSetting("Jwt:AllowEphemeralDevelopmentKey", "true");
+        builder.UseSetting("Messaging:UseInMemory", "true");
         builder.UseSetting("Logging:LogLevel:Default", "Warning");
         builder.ConfigureServices(services =>
         {

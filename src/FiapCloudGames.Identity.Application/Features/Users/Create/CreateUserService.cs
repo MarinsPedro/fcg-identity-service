@@ -1,7 +1,9 @@
 using FiapCloudGames.BuildingBlocks.Exceptions;
+using FiapCloudGames.Identity.Application.Abstractions.Messaging;
 using FiapCloudGames.Identity.Application.Abstractions.Security;
 using FiapCloudGames.Identity.Application.Abstractions.Persistence;
 using FiapCloudGames.Identity.Application.Validation;
+using FiapCloudGames.Identity.Contracts.Events.V1;
 using FiapCloudGames.Identity.Domain.Users;
 using Microsoft.Extensions.Logging;
 
@@ -10,6 +12,7 @@ namespace FiapCloudGames.Identity.Application.Features.Users.Create;
 public sealed class CreateUserService(
     IUserRepository users,
     IIdentityUnitOfWork unitOfWork,
+    IIntegrationEventPublisher events,
     IPasswordHasher hasher,
     TimeProvider clock,
     ILogger<CreateUserService> logger)
@@ -63,6 +66,14 @@ public sealed class CreateUserService(
 
         var user = User.Create(input.Name, email, hasher.Hash(password), clock.GetUtcNow());
         await users.AddAsync(user, cancellationToken);
+        await events.PublishAsync(
+            new UserCreatedEvent(
+                Guid.NewGuid(),
+                user.Id,
+                user.Name,
+                user.Email.Value,
+                user.CreatedAtUtc),
+            cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         logger.LogInformation(
             "Usuário {UserId} criado com sucesso.",

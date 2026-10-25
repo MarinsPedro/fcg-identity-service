@@ -2,6 +2,9 @@
 
 As configurações seguem a hierarquia padrão do ASP.NET Core. Em produção, use variáveis de ambiente e um gerenciador de segredos.
 
+O catálogo completo de chaves, exemplos por ambiente e instruções de
+preenchimento está em [appsettings-reference.md](appsettings-reference.md).
+
 ## Banco de dados
 
 ```text
@@ -9,6 +12,35 @@ ConnectionStrings__Database=Host=localhost;Port=5432;Database=fcg_identity;Usern
 ```
 
 O Identity é o único proprietário do schema `identity`. Nenhum outro serviço deve acessar diretamente suas tabelas.
+
+## RabbitMQ e outbox
+
+```text
+RabbitMq__Host=localhost
+RabbitMq__Port=5672
+RabbitMq__VirtualHost=/
+RabbitMq__Username=fcg_identity
+RabbitMq__Password=...
+```
+
+Ao cadastrar um usuário, a API publica o contrato versionado
+`FiapCloudGames.Identity.Contracts.Events.V1.UserCreatedEvent`. O Bus Outbox do
+MassTransit persiste a mensagem em `identity.outbox_messages` no mesmo
+`SaveChangesAsync` que cria o usuário. A entrega ao RabbitMQ é assíncrona e não
+exige que o broker esteja disponível no instante do cadastro.
+
+O evento é publicado na exchange `identity.user-created.v1`, do tipo `fanout`.
+O nome está centralizado em `UserCreatedEvent.ExchangeName`; consumidores devem
+usar essa constante ao configurar a topologia do MassTransit.
+
+As tabelas `inbox_states`, `outbox_messages` e `outbox_states` pertencem ao
+schema do Identity e são criadas pelo executável de migrations. O
+`EventId` também é usado como `MessageId` do envelope do MassTransit para
+permitir deduplicação pelo consumidor.
+O `X-Correlation-ID` recebido pela API é preservado no header homônimo do
+envelope do MassTransit para manter o rastreio técnico entre HTTP, outbox,
+RabbitMQ e consumidor, sem acoplar esse dado de observabilidade ao contrato do
+evento.
 
 Assim como o migrador do monólito, o executável
 `FiapCloudGames.Identity.Migrations` usa o Generic Host. Ele carrega o

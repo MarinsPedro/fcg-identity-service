@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "audiences": [
+    "identity-api",
+    "catalog-api",
+    "orders-api",
+    "payments-api"
+  ],
+  "scopes": [
+    "store.access",
+    "identity.auth.login",
+    "identity.auth.refresh",
+    "identity.auth.revoke",
+    "identity.users.create",
+    "identity.users.read",
+    "identity.users.write",
+    "identity.clients.create",
+    "identity.clients.read",
+    "identity.clients.write",
+    "identity.audit.read",
+    "catalog.games.create",
+    "catalog.games.read",
+    "catalog.games.write",
+    "orders.purchaseorder.create",
+    "orders.purchaseorder.read",
+    "orders.purchaseorder.write",
+    "payments.create",
+    "payments.read",
+    "payments.confirm",
+    "payments.cancel"
+  ],
+  "clients": [
+    {
+      "clientId": "web-bff",
+      "displayName": "Web BFF",
+      "canIssueUserTokens": true,
+      "allowedAudiences": [
+        "web-bff",
+        "identity-api",
+        "catalog-api",
+        "orders-api",
+        "payments-api"
+      ]
+    },
+    {
+      "clientId": "identity-api",
+      "displayName": "Identity API",
+      "canIssueUserTokens": false
+    },
+    {
+      "clientId": "catalog-api",
+      "displayName": "Catalog API",
+      "canIssueUserTokens": false
+    },
+    {
+      "clientId": "orders-api",
+      "displayName": "Orders API",
+      "canIssueUserTokens": false
+    },
+    {
+      "clientId": "payments-api",
+      "displayName": "Payments API",
+      "canIssueUserTokens": false
+    },
+    {
+      "clientId": "payments-worker",
+      "displayName": "Payments Worker",
+      "canIssueUserTokens": false
+    }
+  ]
+}

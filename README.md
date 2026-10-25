@@ -7,6 +7,7 @@ Este repositório é independente do monólito. Ele possui banco, migrations, pi
 ## Responsabilidades
 
 - cadastrar, consultar, atualizar e desativar usuários;
+- publicar `UserCreatedEvent` de forma transacional após o cadastro;
 - autenticar usuários por e-mail e senha;
 - autenticar aplicações por `client_id` e `client_secret`;
 - cadastrar, consultar, reconfigurar, rotacionar e desativar service clients;
@@ -54,6 +55,7 @@ tests/
   FiapCloudGames.Identity.IntegrationTests/
   FiapCloudGames.Identity.UnitTests/
 docs/
+  appsettings-reference.md
   architecture.md
   configuration.md
   endpoints.md
@@ -64,6 +66,8 @@ docs/
 ```
 
 As regras e exemplos da estrutura estão em [docs/architecture.md](docs/architecture.md).
+O preenchimento completo das configurações da API e do migrador está em
+[docs/appsettings-reference.md](docs/appsettings-reference.md).
 O uso, os contratos e a ordem recomendada dos endpoints estão em
 [docs/endpoints.md](docs/endpoints.md).
 A estratégia e as fronteiras das suítes de teste estão em
@@ -79,6 +83,7 @@ O contrato reutilizável de paginação por cursor está em
 
 - .NET SDK 10;
 - PostgreSQL;
+- RabbitMQ;
 - acesso ao pacote privado `FiapCloudGames.BuildingBlocks` versão `0.3.0` no GitHub Packages.
 
 O `NuGet.Config` referencia as variáveis de ambiente
@@ -135,6 +140,30 @@ dotnet restore FiapCloudGames.Identity.slnx
 dotnet run --project src/FiapCloudGames.Identity.Migrations
 dotnet run --project src/FiapCloudGames.Identity.Api
 ```
+
+### Provisionar aplicações de desenvolvimento
+
+Depois de executar as migrations e iniciar a API, use o manifesto em
+`scripts/service-clients.Development.json` para cadastrar ou sincronizar todos
+os clients, audiences e scopes do workspace atual:
+
+```powershell
+$env:IDENTITY_BOOTSTRAP_CLIENT_SECRET = "WebBff@123456"
+./scripts/Register-ServiceClients.ps1
+```
+
+O script é idempotente: cria clients ausentes e substitui as permissões dos já
+existentes. Segredos são gerados pela API somente na criação e gravados em
+`secrets/service-clients.local.json`, diretório ignorado pelo Git. Para gerar
+novos segredos também para clients existentes, execute com
+`-RotateExistingSecrets`. Valide o plano sem chamar a API com `-WhatIf`.
+
+O cadastro grava o usuário e a mensagem do `UserCreatedEvent` na mesma
+transação do PostgreSQL. O serviço de entrega do MassTransit lê a outbox e
+publica na exchange `identity.user-created.v1` do RabbitMQ, inclusive após uma
+indisponibilidade temporária do broker.
+Antes de subir a API, configure `RabbitMq__Host`, `RabbitMq__VirtualHost`,
+`RabbitMq__Username` e `RabbitMq__Password`.
 
 Com os perfis `Development`, o migrador cria de forma idempotente um
 administrador local e o único client técnico inicial, `web-bff`:

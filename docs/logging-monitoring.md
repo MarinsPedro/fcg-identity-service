@@ -91,6 +91,12 @@ identificador gerado. O valor final:
 Eles não devem ser tratados como sinônimos nem repetidos manualmente nas
 mensagens de log.
 
+Ao publicar um evento de integração, o Identity preserva esse mesmo valor no
+header `X-Correlation-ID` do envelope do MassTransit. Se o valor recebido também
+for um GUID válido, ele preenche o campo nativo `CorrelationId` do MassTransit;
+identificadores textuais continuam inalterados no header. O contrato do evento
+não recebe esse dado, pois ele pertence à observabilidade e não ao domínio.
+
 ## Logging estruturado
 
 Valores variáveis são passados separadamente da mensagem:
