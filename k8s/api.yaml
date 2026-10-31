@@ -1,0 +1,105 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: identity-api
+  namespace: fcg
+  labels:
+    app: identity-api
+spec:
+  selector:
+    app: identity-api
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: identity-api
+  namespace: fcg
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: identity-api
+  template:
+    metadata:
+      labels:
+        app: identity-api
+    spec:
+      containers:
+        - name: identity-api
+          image: fcg-identity-api:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: Development
+            - name: ASPNETCORE_URLS
+              value: http://+:8080
+            - name: ConnectionStrings__Database
+              valueFrom:
+                secretKeyRef:
+                  name: fcg-dev-secrets
+                  key: identity-connection-string
+            - name: Jwt__Issuer
+              valueFrom:
+                configMapKeyRef:
+                  name: fcg-config
+                  key: identity-issuer
+            - name: Jwt__PrivateKeyPath
+              value: ""
+            - name: Jwt__AllowEphemeralDevelopmentKey
+              value: "true"
+            - name: RabbitMq__Host
+              valueFrom:
+                configMapKeyRef:
+                  name: fcg-config
+                  key: rabbitmq-host
+            - name: RabbitMq__Port
+              valueFrom:
+                configMapKeyRef:
+                  name: fcg-config
+                  key: rabbitmq-port
+            - name: RabbitMq__VirtualHost
+              value: "/"
+            - name: RabbitMq__Username
+              valueFrom:
+                secretKeyRef:
+                  name: fcg-dev-secrets
+                  key: rabbitmq-username
+            - name: RabbitMq__Password
+              valueFrom:
+                secretKeyRef:
+                  name: fcg-dev-secrets
+                  key: rabbitmq-password
+          startupProbe:
+            httpGet:
+              path: /health/live
+              port: 8080
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 8080
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 12
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 8080
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
