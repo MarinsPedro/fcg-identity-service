@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    env:
+      NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_PACKAGES_USERNAME: ${{ github.actor }}
+      GITHUB_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.401
+          source-url: https://nuget.pkg.github.com/MarinsPedro/index.json
+      - run: dotnet restore FiapCloudGames.Identity.slnx
+      - run: dotnet format FiapCloudGames.Identity.slnx --verify-no-changes --no-restore
+      - run: dotnet build FiapCloudGames.Identity.slnx -c Release --no-restore
+      - run: dotnet test FiapCloudGames.Identity.slnx -c Release --no-build --no-restore

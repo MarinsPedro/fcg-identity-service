@@ -1,0 +1,14 @@
+bin/
+obj/
+.env
+secrets/
+*.pem
+.vs/
+.idea/
+artifacts/
+*.user
+*.suo
+*.pfx
+*.pem
+.env
+NuGet.Config.local
