@@ -1,5 +1,8 @@
+using MassTransit;
+
 namespace FiapCloudGames.Identity.Contracts.Events.V1;
 
+[MessageUrn("UserCreatedEvent", useDefaultPrefix: true)]
 public sealed record UserCreatedEvent(
     Guid EventId,
     Guid UserId,
