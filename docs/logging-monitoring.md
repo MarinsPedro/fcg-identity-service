@@ -1,5 +1,8 @@
 # Logging estruturado e monitoramento
 
+> **FIAP Fase 2 (Compose / Kubernetes):** estes exemplos de configuracao descrevem opcoes do Identity para uso individual e referencia. No pacote integrado atual, os arquivos `appsettings*.json` estao vazios e os valores de runtime sao fornecidos por `fcg-orchestration/config/compose-identity-*.env`, `config/k8s-identity-*.env` e Secrets do OneClick. Nao use os exemplos abaixo para voltar a preencher `appsettings` no projeto integrado.
+
+
 ## Objetivo
 
 O Identity usa `ILogger<T>` e os Building Blocks da plataforma para produzir

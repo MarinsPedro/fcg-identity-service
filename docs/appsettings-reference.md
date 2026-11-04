@@ -1,5 +1,8 @@
 # Referência de appsettings
 
+> **FIAP Fase 2 (Compose / Kubernetes):** estes exemplos de configuracao descrevem opcoes do Identity para uso individual e referencia. No pacote integrado atual, os arquivos `appsettings*.json` estao vazios e os valores de runtime sao fornecidos por `fcg-orchestration/config/compose-identity-*.env`, `config/k8s-identity-*.env` e Secrets do OneClick. Nao use os exemplos abaixo para voltar a preencher `appsettings` no projeto integrado.
+
+
 Este guia descreve todas as configurações próprias do Identity lidas pela API e
 pelo executável de migrations. Os dois processos possuem arquivos separados e
 não carregam o `appsettings.json` um do outro.
