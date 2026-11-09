@@ -34,11 +34,16 @@ spec:
             secretKeyRef:
               name: fcg-dev-secrets
               key: identity-admin-password
-        - name: InitialServiceClient__Secret
+        - name: InitialServiceClients__Clients__0__Secret
           valueFrom:
             secretKeyRef:
               name: fcg-dev-secrets
               key: web-bff-secret
+        - name: InitialServiceClients__Clients__1__Secret
+          valueFrom:
+            secretKeyRef:
+              name: fcg-domain-dev-secrets
+              key: orders-client-secret
         envFrom:
         - configMapRef:
             name: fcg-identity-migrations-config

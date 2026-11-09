@@ -204,27 +204,31 @@ Admin__Email=admin@example.com
 Admin__Password=CHANGE_ME
 ```
 
-### Client técnico inicial
+### Clients técnicos iniciais
 
 | Chave | Obrigatória | Padrão/observação |
 |---|---:|---|
-| `InitialServiceClient:ClientId` | sim | Deve permanecer `web-bff`; outros valores são rejeitados. |
-| `InitialServiceClient:DisplayName` | sim | Nome administrativo do client. |
-| `InitialServiceClient:Secret` | em banco novo | Segredo forte; `CHANGE_ME` é rejeitado. |
-| `InitialServiceClient:CanIssueUserTokens` | sim | `true` somente porque o `web-bff` emite tokens de usuário. |
-| `InitialServiceClient:AllowedAudiences` | sim | Lista de audiences que o client pode solicitar. |
-| `InitialServiceClient:AllowedScopes` | sim | Lista de scopes concedidos ao client. |
+| `InitialServiceClients:Clients` | sim | Coleção dos clients gerenciados pelo migrador. |
+| `InitialServiceClients:Clients:n:ClientId` | sim | Identificador único do client. |
+| `InitialServiceClients:Clients:n:DisplayName` | sim | Nome administrativo do client. |
+| `InitialServiceClients:Clients:n:Secret` | em banco novo | Segredo forte; `CHANGE_ME` é rejeitado. |
+| `InitialServiceClients:Clients:n:CanIssueUserTokens` | sim | `true` somente para pontas autorizadas, como o `web-bff`. |
+| `InitialServiceClients:Clients:n:AllowedAudiences` | sim | Lista de audiences que o client pode solicitar. |
+| `InitialServiceClients:Clients:n:AllowedScopes` | sim | Lista de scopes concedidos ao client. |
 
-O segredo é necessário somente para criar o `web-bff`. Depois que o client já
-existe, o migrador apenas adiciona audiences e scopes ausentes e não rotaciona
-o segredo. Listas em variáveis de ambiente usam índices iniciados em zero:
+O segredo é obrigatório e a configuração é a fonte de verdade. Em cada
+execução, o migrador sincroniza nome, secret, estado, capacidade de emitir
+tokens, audiences e scopes. Coleções e listas em variáveis de ambiente usam
+índices iniciados em zero:
 
 ```text
-InitialServiceClient__Secret=CHANGE_ME
-InitialServiceClient__AllowedAudiences__0=web-bff
-InitialServiceClient__AllowedAudiences__1=identity-api
-InitialServiceClient__AllowedScopes__0=store.access
-InitialServiceClient__AllowedScopes__1=identity.users.create
+InitialServiceClients__Clients__0__Secret=CHANGE_ME
+InitialServiceClients__Clients__0__AllowedAudiences__0=web-bff
+InitialServiceClients__Clients__0__AllowedAudiences__1=identity-api
+InitialServiceClients__Clients__0__AllowedScopes__0=store.access
+InitialServiceClients__Clients__1__Secret=CHANGE_ME
+InitialServiceClients__Clients__1__AllowedAudiences__0=catalog-api
+InitialServiceClients__Clients__1__AllowedScopes__0=catalog.games.read
 ```
 
 Ao substituir uma lista por variáveis de ambiente, informe todos os itens que

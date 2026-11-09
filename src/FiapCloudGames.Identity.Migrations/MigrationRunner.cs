@@ -8,7 +8,7 @@ namespace FiapCloudGames.Identity.Migrations;
 internal sealed class MigrationRunner(
     IdentityDbContext context,
     AdminSeeder adminSeeder,
-    InitialServiceClientSeeder initialServiceClientSeeder,
+    InitialServiceClientsSeeder initialServiceClientsSeeder,
     ILogger<MigrationRunner> logger)
 {
     public async Task RunAsync(CancellationToken cancellationToken)
@@ -35,7 +35,7 @@ internal sealed class MigrationRunner(
             }
 
             await adminSeeder.SeedAsync(cancellationToken);
-            await initialServiceClientSeeder.SeedAsync(cancellationToken);
+            await initialServiceClientsSeeder.SeedAsync(cancellationToken);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {

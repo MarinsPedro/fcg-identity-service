@@ -129,6 +129,26 @@ public sealed class ServiceClient
         }
     }
 
+    public void ApplyProvisioningConfiguration(
+        string displayName,
+        string secretHash,
+        bool canIssueUserTokens,
+        IEnumerable<string> audiences,
+        IEnumerable<string> scopes)
+    {
+        DisplayName = NormalizeRequired(
+            displayName,
+            DisplayNameMaximumLength,
+            "nome do client");
+        SecretHash = NormalizeRequired(
+            secretHash,
+            SecretHashMaximumLength,
+            "hash do segredo");
+        CanIssueUserTokens = canIssueUserTokens;
+        IsActive = true;
+        ReplacePermissions(audiences, scopes);
+    }
+
     public void RotateSecret(string secretHash)
     {
         if (!IsActive)

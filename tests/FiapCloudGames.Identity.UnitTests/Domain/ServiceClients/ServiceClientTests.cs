@@ -79,6 +79,34 @@ public sealed class ServiceClientTests
             client.AllowedScopes.Select(item => item.Scope));
     }
 
+    [Fact(DisplayName = "Aplicar provisionamento do service client - deve sincronizar toda a configuração")]
+    public void Client_AppliesProvisioningConfiguration()
+    {
+        var client = ServiceClient.Create(
+            "orders-api",
+            "Orders legado",
+            "old-hash",
+            true,
+            ["legacy-api"],
+            ["legacy.scope"],
+            IdentityTestData.NowUtc);
+        client.Deactivate();
+
+        client.ApplyProvisioningConfiguration(
+            "Orders API",
+            "new-hash",
+            false,
+            ["catalog-api"],
+            ["catalog.games.read"]);
+
+        Assert.Equal("Orders API", client.DisplayName);
+        Assert.Equal("new-hash", client.SecretHash);
+        Assert.False(client.CanIssueUserTokens);
+        Assert.True(client.IsActive);
+        Assert.Equal(["catalog-api"], client.AllowedAudiences.Select(item => item.Audience));
+        Assert.Equal(["catalog.games.read"], client.AllowedScopes.Select(item => item.Scope));
+    }
+
     [Fact(DisplayName = "Alterar service client - deve rotacionar o segredo e permitir desativação")]
     public void Client_RotatesSecretAndCanBeDeactivated()
     {

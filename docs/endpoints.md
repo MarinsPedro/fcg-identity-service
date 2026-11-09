@@ -50,7 +50,7 @@ contratos versionados.
 Antes de testar os fluxos:
 
 1. aplique as migrations do Identity;
-2. forneça `InitialServiceClient__Secret` na primeira execução do migrador;
+2. forneça os campos `InitialServiceClients__Clients__N__Secret` na primeira execução do migrador;
 3. inicie o Identity;
 4. confirme que o client possui as audiences e os scopes necessários.
 
@@ -61,8 +61,9 @@ Administrador:
   email: admin@fiapcloudgames.com
   senha: Admin@123456
 
-Service client:
+Service clients:
   client_id: web-bff
+  client_id: orders-api
   client_secret: WebBff@123456
 ```
 

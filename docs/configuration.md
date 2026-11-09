@@ -121,26 +121,25 @@ Jwt__RefreshTokenLifetime=7.00:00:00
 
 Cada rotação deve usar um novo `KeyId`. Durante uma rotação sem interrupção, a publicação simultânea da chave anterior e da nova será uma evolução necessária; a primeira versão publica a chave ativa.
 
-## Client inicial e provisionamento de produção
+## Clients iniciais e provisionamento de produção
 
-O projeto de migrations provisiona somente o `web-bff`. A API não cria clients
-durante o startup. Em um banco novo, injete o segredo antes de executar o
-migrador:
+O projeto de migrations provisiona os clients declarados em
+`InitialServiceClients:Clients`. A API não cria clients durante o startup. Em
+um banco novo, injete os segredos antes de executar o migrador:
 
 ```text
-InitialServiceClient__Secret=um-segredo-forte-e-exclusivo
+InitialServiceClients__Clients__0__Secret=segredo-exclusivo-do-web-bff
+InitialServiceClients__Clients__1__Secret=segredo-exclusivo-do-orders-api
 ```
 
-O valor literal `CHANGE_ME` é rejeitado. O segredo é usado apenas como entrada,
-armazenado como hash PBKDF2 e nunca gravado em auditoria ou devolvido por uma
-consulta. Depois que o `web-bff` existe, novas execuções do migrador são
-idempotentes e não exigem mais essa variável; removê-la do Job reduz a exposição
-do segredo.
+O valor literal `CHANGE_ME` é rejeitado. Cada segredo é usado apenas como
+entrada, armazenado como hash PBKDF2 e nunca gravado em auditoria ou devolvido
+por uma consulta. Depois que os clients existem, novas execuções são
+idempotentes e não exigem mais os secrets.
 
-O `web-bff` inicial recebe audience `web-bff` e `identity-api`, permissão para
-emitir tokens de usuário e os scopes administrativos necessários para cadastrar
-usuários e gerenciar os demais clients. O migrador rejeita a tentativa de usar
-essa seed para outro `client_id`.
+O `web-bff` recebe as audiences e os scopes usados pela borda. O `orders-api`
+recebe somente as permissões necessárias para consultar Catalog, Promotions e
+Library. Apenas o `web-bff` pode emitir tokens de usuário.
 
 Regras:
 
@@ -152,33 +151,24 @@ Regras:
 
 Cada audience e scope é persistido como uma associação individual em
 `service_client_audiences` e `service_client_scopes`. As listas da configuração
-do client inicial são usadas somente como entrada da seed; não são armazenadas em uma coluna
+são usadas somente como entrada da seed; não são armazenadas em uma coluna
 concatenada.
 
-Depois do provisionamento, crie os clients de APIs e workers por
-`POST /v1/service-clients`. O Identity gera o segredo com aleatoriedade
-criptográfica e o mostra uma única vez. Use
-`POST /v1/service-clients/{clientId}/secret/rotate` para rotação. A rotação
-invalida imediatamente o segredo anterior; distribua o novo segredo de forma
-coordenada pelo secret manager.
+Depois do provisionamento, clients não gerenciados pelo migrador podem ser
+criados por `POST /v1/service-clients`. Use
+`POST /v1/service-clients/{clientId}/secret/rotate` para rotação explícita.
 
-Em `Development`, a API possui o seguinte client exclusivamente para testes:
+Em `Development`, o migrador provisiona:
 
 ```text
-client_id=web-bff
-client_secret=WebBff@123456
-audiences=web-bff identity-api
-scopes=store.access identity.users.create identity.users.read identity.users.write
-       identity.auth.login identity.auth.refresh identity.auth.revoke
+client_id=web-bff      client_secret=WebBff@123456
+client_id=orders-api   client_secret=Fiap@123456
 ```
 
-A seed não troca o segredo, o nome, o estado ou a capacidade de emitir tokens
-de um client existente. Ela adiciona ao `web-bff` somente as audiences e os
-scopes configurados que ainda estiverem ausentes, sem remover permissões extras.
-Assim, executar novamente o migrador atualiza bancos provisionados por versões
-anteriores e registra a mudança na auditoria. Alterar
-`InitialServiceClient__Secret` continua sem rotacionar uma credencial já
-persistida.
+A seed trata a configuração como fonte de verdade e sincroniza nome, secret,
+estado ativo, capacidade de emitir tokens, audiences e scopes. Permissões
+obsoletas são removidas, clients configurados são reativados e todas as mudanças
+são registradas na auditoria.
 
 ## Health checks e auditoria
 

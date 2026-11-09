@@ -143,20 +143,11 @@ dotnet run --project src/FiapCloudGames.Identity.Api
 
 ### Provisionar aplicações de desenvolvimento
 
-Depois de executar as migrations e iniciar a API, use o manifesto em
-`scripts/service-clients.Development.json` para cadastrar ou sincronizar todos
-os clients, audiences e scopes do workspace atual:
-
-```powershell
-$env:IDENTITY_BOOTSTRAP_CLIENT_SECRET = "WebBff@123456"
-./scripts/Register-ServiceClients.ps1
-```
-
-O script é idempotente: cria clients ausentes e substitui as permissões dos já
-existentes. Segredos são gerados pela API somente na criação e gravados em
-`secrets/service-clients.local.json`, diretório ignorado pelo Git. Para gerar
-novos segredos também para clients existentes, execute com
-`-RotateExistingSecrets`. Valide o plano sem chamar a API com `-WhatIf`.
+O projeto de migrations provisiona de forma idempotente os clients declarados
+em `InitialServiceClients:Clients`. A configuração padrão cria `web-bff` e
+`orders-api` e sincroniza integralmente nome, secret, estado, capacidade de
+emitir tokens, audiences e scopes. Em outros ambientes, injete cada secret por
+variável de ambiente ou secret manager antes de executar o migrador.
 
 O cadastro grava o usuário e a mensagem do `UserCreatedEvent` na mesma
 transação do PostgreSQL. O serviço de entrega do MassTransit lê a outbox e
