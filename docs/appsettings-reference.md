@@ -1,8 +1,5 @@
 # Referência de appsettings
 
-> **FIAP Fase 2 (Compose / Kubernetes):** estes exemplos de configuracao descrevem opcoes do Identity para uso individual e referencia. No pacote integrado atual, os arquivos `appsettings*.json` estao vazios e os valores de runtime sao fornecidos por `fcg-orchestration/config/compose-identity-*.env`, `config/k8s-identity-*.env` e Secrets do OneClick. Nao use os exemplos abaixo para voltar a preencher `appsettings` no projeto integrado.
-
-
 Este guia descreve todas as configurações próprias do Identity lidas pela API e
 pelo executável de migrations. Os dois processos possuem arquivos separados e
 não carregam o `appsettings.json` um do outro.
@@ -30,6 +27,23 @@ Não versione valores reais de senha, segredo ou chave privada. Os valores
 locais conhecidos devem existir apenas em `Development`; em ambientes
 compartilhados, injete-os por secret manager, Kubernetes Secret ou mecanismo
 equivalente.
+
+### Compose e Kubernetes do workspace
+
+Os `appsettings*.json` deste repositório fornecem a estrutura e os padrões para
+execução direta. No ambiente integrado, o repositório irmão
+`fgc-orchestrator-service` aplica as substituições de runtime:
+
+| Execução | API | Migrations |
+|---|---|---|
+| Docker Compose | `config/compose/identity/api.env` | `config/compose/identity/migrations.env` |
+| Kubernetes | `config/k8s-identity-api.env` | `config/k8s-identity-migrations.env` |
+
+No Compose acadêmico, as credenciais locais conhecidas estão no arquivo de
+migrations. No Kubernetes, os arquivos `.env` contêm somente valores não
+secretos; `k8s/migrations-job.yaml` recebe senha do administrador e secrets de
+`web-bff` e `orders-api` por `Secret`. Como a seed é executada em todo rollout,
+esses dois secrets precisam continuar disponíveis para o Job.
 
 ## API
 
@@ -169,7 +183,7 @@ ASPNETCORE_URLS=http://+:8080
 
 O arquivo do migrador está em
 `src/FiapCloudGames.Identity.Migrations/appsettings.json`. Ele atualiza o schema
-e executa as seeds do administrador e do client técnico inicial.
+e executa as seeds do administrador e dos clients técnicos iniciais.
 
 ### Conexão
 
@@ -211,7 +225,7 @@ Admin__Password=CHANGE_ME
 | `InitialServiceClients:Clients` | sim | Coleção dos clients gerenciados pelo migrador. |
 | `InitialServiceClients:Clients:n:ClientId` | sim | Identificador único do client. |
 | `InitialServiceClients:Clients:n:DisplayName` | sim | Nome administrativo do client. |
-| `InitialServiceClients:Clients:n:Secret` | em banco novo | Segredo forte; `CHANGE_ME` é rejeitado. |
+| `InitialServiceClients:Clients:n:Secret` | sim, em toda execução | Segredo forte; `CHANGE_ME` é rejeitado. O hash é atualizado quando o valor muda. |
 | `InitialServiceClients:Clients:n:CanIssueUserTokens` | sim | `true` somente para pontas autorizadas, como o `web-bff`. |
 | `InitialServiceClients:Clients:n:AllowedAudiences` | sim | Lista de audiences que o client pode solicitar. |
 | `InitialServiceClients:Clients:n:AllowedScopes` | sim | Lista de scopes concedidos ao client. |
@@ -232,7 +246,9 @@ InitialServiceClients__Clients__1__AllowedScopes__0=catalog.games.read
 ```
 
 Ao substituir uma lista por variáveis de ambiente, informe todos os itens que
-o ambiente deve conceder. Mantenha o princípio do menor privilégio.
+o ambiente deve conceder. Mantenha o princípio do menor privilégio. A coleção é
+autoritativa apenas para os clients nela declarados: cada um é sincronizado e
+reativado; clients não declarados permanecem inalterados.
 
 ## Checklist antes de iniciar
 
@@ -249,8 +265,8 @@ o ambiente deve conceder. Mantenha o princípio do menor privilégio.
 ### Migrations
 
 - usuário do banco com permissão para alterar o schema `identity`;
-- segredo inicial do `web-bff` fornecido em banco novo;
+- secrets de todos os clients gerenciados fornecidos em toda execução;
 - credenciais de administrador fornecidas juntas ou ambas omitidas;
 - `DOTNET_ENVIRONMENT` definido corretamente;
-- secrets removidos do Job após o provisionamento quando não forem mais
-  necessários.
+- secrets injetados por Secret/secret manager, sem valores reais no manifesto
+  ou na imagem.

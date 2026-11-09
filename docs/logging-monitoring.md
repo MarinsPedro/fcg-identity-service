@@ -1,8 +1,5 @@
 # Logging estruturado e monitoramento
 
-> **FIAP Fase 2 (Compose / Kubernetes):** estes exemplos de configuracao descrevem opcoes do Identity para uso individual e referencia. No pacote integrado atual, os arquivos `appsettings*.json` estao vazios e os valores de runtime sao fornecidos por `fcg-orchestration/config/compose-identity-*.env`, `config/k8s-identity-*.env` e Secrets do OneClick. Nao use os exemplos abaixo para voltar a preencher `appsettings` no projeto integrado.
-
-
 ## Objetivo
 
 O Identity usa `ILogger<T>` e os Building Blocks da plataforma para produzir
@@ -42,7 +39,7 @@ flowchart LR
     Activity -. TraceId, SpanId e ParentId .-> Logger
     Correlation -. CorrelationId .-> Logger
     Application --> Audit[(security_audit_events)]
-    Probe[Health probe] --> Health[/health, /live e /ready]
+    Probe[Health probe] --> Health[/health, /health/live e /health/ready]
     Health --> Database[(PostgreSQL)]
 ```
 
@@ -239,7 +236,8 @@ As seguintes operações criam um registro em
 
 | Evento | Operação |
 |---|---|
-| `service_client.provisioned` | provisionamento inicial do `web-bff` pelo migrador |
+| `service_client.provisioned` | provisionamento inicial de um client configurado pelo migrador |
+| `service_client.provisioning_synchronized` | sincronização autoritativa de um client configurado pelo migrador |
 | `service_client.created` | criação administrativa de client |
 | `service_client.permissions_changed` | substituição de audiences e scopes |
 | `service_client.secret_rotated` | rotação do segredo |

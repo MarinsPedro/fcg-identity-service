@@ -1,8 +1,5 @@
 # Configuração do Identity
 
-> **FIAP Fase 2 (Compose / Kubernetes):** estes exemplos de configuracao descrevem opcoes do Identity para uso individual e referencia. No pacote integrado atual, os arquivos `appsettings*.json` estao vazios e os valores de runtime sao fornecidos por `fcg-orchestration/config/compose-identity-*.env`, `config/k8s-identity-*.env` e Secrets do OneClick. Nao use os exemplos abaixo para voltar a preencher `appsettings` no projeto integrado.
-
-
 As configurações seguem a hierarquia padrão do ASP.NET Core. Em produção, use variáveis de ambiente e um gerenciador de segredos.
 
 O catálogo completo de chaves, exemplos por ambiente e instruções de
@@ -121,11 +118,11 @@ Jwt__RefreshTokenLifetime=7.00:00:00
 
 Cada rotação deve usar um novo `KeyId`. Durante uma rotação sem interrupção, a publicação simultânea da chave anterior e da nova será uma evolução necessária; a primeira versão publica a chave ativa.
 
-## Clients iniciais e provisionamento de produção
+## Clients iniciais gerenciados pelo migrador
 
 O projeto de migrations provisiona os clients declarados em
-`InitialServiceClients:Clients`. A API não cria clients durante o startup. Em
-um banco novo, injete os segredos antes de executar o migrador:
+`InitialServiceClients:Clients`. A API não cria clients durante o startup.
+Injete os segredos antes de toda execução do migrador:
 
 ```text
 InitialServiceClients__Clients__0__Secret=segredo-exclusivo-do-web-bff
@@ -134,8 +131,9 @@ InitialServiceClients__Clients__1__Secret=segredo-exclusivo-do-orders-api
 
 O valor literal `CHANGE_ME` é rejeitado. Cada segredo é usado apenas como
 entrada, armazenado como hash PBKDF2 e nunca gravado em auditoria ou devolvido
-por uma consulta. Depois que os clients existem, novas execuções são
-idempotentes e não exigem mais os secrets.
+por uma consulta. A configuração é autoritativa: em toda execução, o migrador
+valida os secrets e substitui o hash quando o valor configurado mudar. Portanto,
+o Job de migrations precisa receber os secrets mesmo quando o banco já existe.
 
 O `web-bff` recebe as audiences e os scopes usados pela borda. O `orders-api`
 recebe somente as permissões necessárias para consultar Catalog, Promotions e
@@ -168,7 +166,8 @@ client_id=orders-api   client_secret=Fiap@123456
 A seed trata a configuração como fonte de verdade e sincroniza nome, secret,
 estado ativo, capacidade de emitir tokens, audiences e scopes. Permissões
 obsoletas são removidas, clients configurados são reativados e todas as mudanças
-são registradas na auditoria.
+são registradas na auditoria. Clients existentes que não aparecem na coleção
+não são alterados.
 
 ## Health checks e auditoria
 

@@ -84,42 +84,44 @@ O contrato reutilizável de paginação por cursor está em
 - .NET SDK 10;
 - PostgreSQL;
 - RabbitMQ;
-- acesso ao pacote privado `FiapCloudGames.BuildingBlocks` versão `0.3.0` no GitHub Packages.
+- repositório `fcg-dotnet-building-blocks` como irmão deste repositório para o
+  desenvolvimento local; ou
+- acesso ao pacote privado `FiapCloudGames.BuildingBlocks` versão `0.3.0` no
+  GitHub Packages quando o build usar o pacote publicado.
 
-O `NuGet.Config` referencia as variáveis de ambiente
-`GITHUB_PACKAGES_USERNAME` e `GITHUB_PACKAGES_TOKEN`; os valores reais das
-credenciais não são gravados no repositório. Defina-os antes do restore:
+### Building Blocks local ou publicado
 
-```powershell
-$env:GITHUB_PACKAGES_USERNAME = "MarinsPedro"
-$env:GITHUB_PACKAGES_TOKEN = Read-Host "Token do GitHub Packages" -MaskInput
+`UseLocalBuildingBlocks` controla somente como os projetos referenciam o
+Building Blocks:
 
-dotnet restore FiapCloudGames.Identity.slnx --configfile NuGet.Config
-```
+| Valor | Dependência utilizada | Uso esperado |
+|---|---|---|
+| `true` | `ProjectReference` para `../fcg-dotnet-building-blocks` | desenvolvimento local e Docker Compose do workspace |
+| `false` | `PackageReference` para a versão de `Directory.Packages.props` | CI e builds isolados |
 
-O token precisa de `read:packages` e acesso ao pacote privado. Para o Visual
-Studio herdar essas variáveis, configure-as no usuário e reinicie o Visual
-Studio. O `appsettings.json` não é usado pelo NuGet, pois o restore ocorre antes
-da aplicação existir.
-
-Depois do restore pelo terminal, remova o token da sessão quando ele não for
-mais necessário:
+O padrão deste workspace é `true`. Assim, alterações locais do Building Blocks
+são consumidas imediatamente e não exigem publicação de pacote nem credenciais
+do GitHub Packages:
 
 ```powershell
-Remove-Item Env:\GITHUB_PACKAGES_TOKEN
+dotnet restore FiapCloudGames.Identity.slnx
+dotnet build FiapCloudGames.Identity.slnx
 ```
 
-Para testar alterações locais do Building Blocks sem publicar um NuGet,
-mantenha os repositórios como irmãos e use:
+Se o repositório irmão não estiver disponível, use explicitamente o pacote
+publicado e configure o source do GitHub Packages no NuGet do ambiente:
 
-```powershell
-dotnet build FiapCloudGames.Identity.slnx -p:UseLocalBuildingBlocks=true
+```text
+dotnet restore FiapCloudGames.Identity.slnx -p:UseLocalBuildingBlocks=false
+dotnet build FiapCloudGames.Identity.slnx -p:UseLocalBuildingBlocks=false
 ```
 
-O padrão é `UseLocalBuildingBlocks=false`, portanto CI e produção continuam
-usando a versão publicada definida em `Directory.Packages.props`.
-
-No GitHub, conceda ao repositório do Identity acesso de leitura ao package Building Blocks em **Package settings > Manage Actions access**. O workflow usa o `GITHUB_TOKEN` efêmero; nenhum PAT deve ser cadastrado no YAML.
+O token usado pelo NuGet precisa de `read:packages` e acesso ao pacote privado.
+O `NuGet.Config` do repositório contém apenas `nuget.org`; o workflow de CI
+registra o source do GitHub Packages com `actions/setup-dotnet`, usa o
+`GITHUB_TOKEN` efêmero e força `UseLocalBuildingBlocks=false`. Conceda ao
+repositório do Identity acesso em **Package settings > Manage Actions access**.
+Nenhum PAT deve ser gravado no YAML, no `NuGet.Config` ou em `appsettings`.
 
 ## Execução local
 
@@ -156,13 +158,19 @@ indisponibilidade temporária do broker.
 Antes de subir a API, configure `RabbitMq__Host`, `RabbitMq__VirtualHost`,
 `RabbitMq__Username` e `RabbitMq__Password`.
 
-Com os perfis `Development`, o migrador cria de forma idempotente um
-administrador local e o único client técnico inicial, `web-bff`:
+Na execução direta com o perfil `Development` deste repositório, o migrador
+cria de forma idempotente um administrador local e os dois clients técnicos
+iniciais:
 
 | Tipo | Identificador | Segredo local |
 |---|---|---|
 | administrador | `admin@fiapcloudgames.com` | `Admin@123456` |
 | service client | `web-bff` | `WebBff@123456` |
+| service client | `orders-api` | `Fiap@123456` |
+
+O Docker Compose integrado sobrescreve essas credenciais por
+`fgc-orchestrator-service/config/compose/identity/migrations.env`; no ambiente
+acadêmico atual, administrador, `web-bff` e `orders-api` usam `Fiap@123456`.
 
 Essas credenciais são públicas e exclusivas do ambiente local. Nunca as use em
 um ambiente compartilhado ou de produção. As regras e o fluxo de teste estão em
@@ -212,6 +220,7 @@ use a imagem com target `migrations` antes de iniciar ou atualizar a API:
 ```powershell
 docker build `
   --target migrations `
+  --build-context "buildingblocks=../fcg-dotnet-building-blocks" `
   --secret "id=nuget_config,src=$env:APPDATA\NuGet\NuGet.Config" `
   -t fcg-identity-migrations:local .
 ```
@@ -225,6 +234,7 @@ Para criar a imagem sem gravar credenciais do GitHub Packages em camadas Docker,
 
 ```powershell
 docker build `
+  --build-context "buildingblocks=../fcg-dotnet-building-blocks" `
   --secret "id=nuget_config,src=$env:APPDATA\NuGet\NuGet.Config" `
   -t fcg-identity:local .
 ```

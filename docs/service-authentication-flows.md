@@ -3,9 +3,9 @@
 Este documento explica como os tokens de serviço são usados em dois cenários:
 
 1. o BFF chama o Catalog em nome do sistema;
-2. o Orders chama o Payments diretamente, sem passar pelo BFF.
+2. o Orders chama o Promotions diretamente, sem passar pelo BFF.
 
-Nos dois casos, somente o Identity emite tokens. Catalog, Orders e Payments
+Nos dois casos, somente o Identity emite tokens. Catalog, Orders e Promotions
 validam os JWTs localmente usando a chave pública publicada pelo Identity.
 
 ## Componentes do fluxo
@@ -53,8 +53,7 @@ Exemplo de permissões do `web-bff` no Identity:
 }
 ```
 
-Os nomes de scopes do Catalog são exemplos e devem ser definidos pelo próprio
-serviço quando ele for implementado.
+Essas permissões fazem parte da configuração inicial atual do `web-bff`.
 
 ### Primeira chamada
 
@@ -160,13 +159,13 @@ contexto de usuário, o BFF extrai o ID do token de usuário já validado e o en
 explicitamente na rota, query string ou corpo do contrato. O token interno
 continua identificando apenas o `web-bff`.
 
-## Fluxo 2: Orders para Payments
+## Fluxo 2: Orders para Promotions
 
 ### Contexto
 
 Uma comunicação interna não precisa passar pelo BFF ou API Gateway. O Orders
-possui `client_id` e segredo próprios, solicita um token para o Payments e chama
-diretamente a API interna.
+possui `client_id` e segredo próprios, solicita um token para o Promotions e
+chama diretamente a API interna para calcular o desconto de uma compra.
 
 Exemplo de configuração do `orders-api` no Identity:
 
@@ -174,11 +173,15 @@ Exemplo de configuração do `orders-api` no Identity:
 {
   "clientId": "orders-api",
   "allowedAudiences": [
-    "payments-api"
+    "catalog-api",
+    "promotions-api",
+    "library-api"
   ],
   "allowedScopes": [
-    "payments.process",
-    "payments.read"
+    "catalog.games.read",
+    "promotions.calculate",
+    "promotions.campaigns.read",
+    "library.ownership.read"
   ]
 }
 ```
@@ -186,17 +189,17 @@ Exemplo de configuração do `orders-api` no Identity:
 ### Primeira chamada
 
 ```text
-Orders                           Identity                         Payments
+Orders                           Identity                       Promotions
   │                                 │                                │
   │ POST /oauth2/token              │                                │
   ├────────────────────────────────►│                                │
-  │ audience=payments-api           │                                │
-  │ scope=payments.process          │                                │
+  │ audience=promotions-api         │                                │
+  │ scope=promotions.calculate      │                                │
   │                                 │                                │
   │ token de serviço                │                                │
   │◄────────────────────────────────┤                                │
   │                                                                  │
-  │ POST /internal/v1/payments                                      │
+  │ POST /internal/v1/promotions/calculate                           │
   │ Bearer <service-token>                                          │
   ├─────────────────────────────────────────────────────────────────►│
   │                                                                  │
@@ -208,14 +211,14 @@ Orders                           Identity                         Payments
   │                                 │◄───────────────────────────────┤
   │                                 ├───────────────────────────────►│
   │                                                                  │
-  │                                       Payments valida o JWT       │
+  │                                    Promotions valida o JWT        │
   │                                                                  │
-  │ resultado do processamento                                      │
+  │ preço final calculado                                            │
   │◄─────────────────────────────────────────────────────────────────┤
 ```
 
-O Payments consome Discovery e JWKS pelo mesmo mecanismo usado pelo Catalog.
-Não existe troca de segredo entre Orders e Payments. O segredo do Orders é
+O Promotions consome Discovery e JWKS pelo mesmo mecanismo usado pelo Catalog.
+Não existe troca de segredo entre Orders e Promotions. O segredo do Orders é
 apresentado somente ao Identity.
 
 ### Solicitação do token pelo Orders
@@ -227,8 +230,8 @@ Content-Type: application/x-www-form-urlencoded
 grant_type=client_credentials
 &client_id=orders-api
 &client_secret=SEGREDO_DO_ORDERS
-&audience=payments-api
-&scope=payments.process
+&audience=promotions-api
+&scope=promotions.calculate
 ```
 
 ```bash
@@ -237,8 +240,8 @@ curl --request POST http://localhost:5081/oauth2/token \
   --data-urlencode "grant_type=client_credentials" \
   --data-urlencode "client_id=orders-api" \
   --data-urlencode "client_secret=SEGREDO_DO_ORDERS" \
-  --data-urlencode "audience=payments-api" \
-  --data-urlencode "scope=payments.process"
+  --data-urlencode "audience=promotions-api" \
+  --data-urlencode "scope=promotions.calculate"
 ```
 
 Claims esperadas:
@@ -249,61 +252,57 @@ Claims esperadas:
   "client_id": "orders-api",
   "token_use": "service",
   "scope": [
-    "payments.process"
+    "promotions.calculate"
   ],
   "iss": "fiap-cloud-games-identity",
-  "aud": "payments-api"
+  "aud": "promotions-api"
 }
 ```
 
-### Chamada do Orders para o Payments
+### Chamada do Orders para o Promotions
 
 ```http
-POST http://localhost:5084/internal/v1/payments
+POST http://localhost:5083/internal/v1/promotions/calculate
 Authorization: Bearer TOKEN_DE_SERVICO
 Content-Type: application/json
 ```
 
 ```json
 {
-  "orderId": "b19a8782-65e4-4e56-b2eb-472c9cc41028",
-  "userId": "ca0cd8f3-c62f-48e4-aee8-9ba4f9983002",
-  "amount": 149.90,
-  "currency": "BRL",
-  "paymentMethodToken": "token-do-provedor"
+  "gameId": "80fdc742-e7c1-4564-a269-8d52784bec44",
+  "basePrice": 99.90,
+  "promotionId": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
 }
 ```
 
 ```bash
-curl --request POST http://localhost:5084/internal/v1/payments \
+curl --request POST http://localhost:5083/internal/v1/promotions/calculate \
   --header "Authorization: Bearer TOKEN_DE_SERVICO" \
   --header "Content-Type: application/json" \
   --data '{
-    "orderId": "b19a8782-65e4-4e56-b2eb-472c9cc41028",
-    "userId": "ca0cd8f3-c62f-48e4-aee8-9ba4f9983002",
-    "amount": 149.90,
-    "currency": "BRL",
-    "paymentMethodToken": "token-do-provedor"
+    "gameId": "80fdc742-e7c1-4564-a269-8d52784bec44",
+    "basePrice": 99.90,
+    "promotionId": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
   }'
 ```
 
-O token identifica a aplicação chamadora (`orders-api`). `orderId` e `userId`
-são dados do negócio e aparecem explicitamente no corpo. O Payments não deve
-interpretar o `sub` do token de serviço como ID de usuário.
+O token identifica a aplicação chamadora (`orders-api`). `gameId`, `basePrice`
+e `promotionId` são dados do negócio e aparecem explicitamente no corpo. O
+Promotions não interpreta o `sub` do token de serviço como ID de usuário.
 
-O Payments valida:
+O Promotions valida:
 
 - assinatura usando o JWKS;
 - `iss=fiap-cloud-games-identity`;
-- `aud=payments-api`;
+- `aud=promotions-api`;
 - `token_use=service`;
 - validade temporal;
-- presença de `payments.process`;
-- regras de negócio e idempotência do pagamento.
+- presença de `promotions.calculate`;
+- regras de elegibilidade e vigência da promoção.
 
 ## Configuração das APIs consumidoras
 
-Catalog e Payments podem usar a mesma configuração de autenticação, mudando
+Catalog e Promotions podem usar a mesma configuração de autenticação, mudando
 somente a audiência:
 
 ```csharp
@@ -312,7 +311,7 @@ builder.Services
     .AddJwtBearer("Bearer", options =>
     {
         options.Authority = "http://localhost:5081";
-        options.Audience = "catalog-api"; // ou payments-api
+        options.Audience = "catalog-api"; // ou promotions-api
         options.RequireHttpsMetadata = false; // somente em Development
     });
 ```
@@ -345,13 +344,13 @@ API de destino
 ```
 
 O BFF mantém um token para `catalog-api`. O Orders mantém outro token para
-`payments-api`. Um token nunca deve ser reutilizado em uma audiência diferente.
+`promotions-api`. Um token nunca deve ser reutilizado em uma audiência diferente.
 
 Na segunda chamada, o fluxo normal é:
 
 ```text
-Orders ── token em cache ──► Payments
-Payments ── JWKS em cache ──► valida localmente
+Orders ── token em cache ──► Promotions
+Promotions ── JWKS em cache ──► valida localmente
 ```
 
 O Identity volta a ser consultado quando:

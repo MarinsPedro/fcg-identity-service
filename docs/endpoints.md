@@ -50,11 +50,12 @@ contratos versionados.
 Antes de testar os fluxos:
 
 1. aplique as migrations do Identity;
-2. forneça os campos `InitialServiceClients__Clients__N__Secret` na primeira execução do migrador;
+2. forneça os campos `InitialServiceClients__Clients__N__Secret` em toda execução do migrador;
 3. inicie o Identity;
 4. confirme que o client possui as audiences e os scopes necessários.
 
-Ao executar os projetos com seus perfis `Development`, já ficam disponíveis:
+Na execução direta com o perfil `Development` deste repositório, ficam
+disponíveis:
 
 ```text
 Administrador:
@@ -62,10 +63,13 @@ Administrador:
   senha: Admin@123456
 
 Service clients:
-  client_id: web-bff
-  client_id: orders-api
-  client_secret: WebBff@123456
+  web-bff / WebBff@123456
+  orders-api / Fiap@123456
 ```
+
+No Docker Compose integrado, o arquivo
+`fgc-orchestrator-service/config/compose/identity/migrations.env` sobrescreve
+as três credenciais com o valor acadêmico `Fiap@123456`.
 
 Essas credenciais são intencionalmente conhecidas e devem ser usadas somente em
 desenvolvimento local.
@@ -214,11 +218,11 @@ Identity e retornado somente nesta resposta:
 
 ```json
 {
-  "clientId": "orders-api",
-  "displayName": "Orders API",
+  "clientId": "reports-worker",
+  "displayName": "Reports Worker",
   "canIssueUserTokens": false,
-  "allowedAudiences": ["payments-api"],
-  "allowedScopes": ["payments.write"]
+  "allowedAudiences": ["catalog-api"],
+  "allowedScopes": ["catalog.games.read"]
 }
 ```
 
